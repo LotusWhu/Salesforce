@@ -1,5 +1,5 @@
 {
-  "name": "@renrenbang/api",
+  "name": "@localhub/api",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -22,7 +22,7 @@
     "@nestjs/schedule": "^4.1.1",
     "@nestjs/swagger": "^7.4.2",
     "@prisma/client": "^5.20.0",
-    "@renrenbang/shared-types": "workspace:*",
+    "@localhub/shared-types": "workspace:*",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "googleapis": "^144.0.0",

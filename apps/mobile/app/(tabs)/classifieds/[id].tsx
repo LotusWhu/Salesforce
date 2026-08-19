@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { ClassifiedListingDto } from "@renrenbang/shared-types";
+import { ClassifiedListingDto } from "@localhub/shared-types";
 import { api } from "@/lib/api";
 import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
 import { Badge, Card, colors } from "@/components/ui";

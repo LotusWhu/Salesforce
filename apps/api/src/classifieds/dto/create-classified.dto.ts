@@ -1,4 +1,4 @@
-import { ClassifiedCategory } from "@renrenbang/shared-types";
+import { ClassifiedCategory } from "@localhub/shared-types";
 import { Type } from "class-transformer";
 import { IsArray, IsEnum, IsNumber, IsOptional, IsString, MaxLength, Min, ValidateNested } from "class-validator";
 import { GeoPointDto } from "../../tasks/dto/geo-point.dto";

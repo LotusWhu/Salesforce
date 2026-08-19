@@ -93,13 +93,38 @@ export enum CarpoolBookingStatus {
   COMPLETED = "COMPLETED",
 }
 
-// ---------- 分类信息 (Classifieds) ----------
+export enum CarpoolFareMode {
+  ONE_WAY = "ONE_WAY",
+  ROUND_TRIP = "ROUND_TRIP",
+}
+
+export enum CarpoolRequestStatus {
+  PENDING = "PENDING", // 待匹配，进入匹配池等待
+  MATCHED = "MATCHED", // 已自动匹配到某个行程
+  CANCELLED = "CANCELLED",
+  EXPIRED = "EXPIRED",
+}
+
+// ---------- 分类信息 (Classifieds, 对标 yeeyi 分类体系) ----------
 export enum ClassifiedCategory {
-  SECOND_HAND = "SECOND_HAND", // 二手交易 (类似咸鱼)
-  RENTAL = "RENTAL", // 租房
-  JOB = "JOB", // 招聘/求职
-  COMMUNITY = "COMMUNITY", // 社区/活动
-  SERVICES = "SERVICES", // 商家服务信息
+  LOCAL_INFO = "LOCAL_INFO", // 本地资讯
+  RENTAL = "RENTAL", // 房屋租赁
+  REAL_ESTATE_SALE = "REAL_ESTATE_SALE", // 房屋交易
+  VEHICLE = "VEHICLE", // 车辆交易
+  JOB = "JOB", // 求职招聘
+  SECOND_HAND = "SECOND_HAND", // 二手市场
+  BUSINESS_SALE = "BUSINESS_SALE", // 生意买卖
+  PET = "PET", // 宠物交易
+  ACCOUNTING_TAX = "ACCOUNTING_TAX", // 会计税务
+  MOVING_LOGISTICS = "MOVING_LOGISTICS", // 物流搬运
+  CLEANING = "CLEANING", // 清洁通渠
+  GARDENING = "GARDENING", // 园艺绿化
+  PLUMBING_ELECTRICAL = "PLUMBING_ELECTRICAL", // 水管电工
+  NANNY_CONFINEMENT = "NANNY_CONFINEMENT", // 保姆月嫂
+  RENOVATION = "RENOVATION", // 建筑家装
+  DRIVING_SCHOOL = "DRIVING_SCHOOL", // 驾校招生
+  LOAN = "LOAN", // 贷款
+  LIFE_SERVICES = "LIFE_SERVICES", // 生活服务
   FREE = "FREE", // 免费赠送
   OTHER = "OTHER",
 }

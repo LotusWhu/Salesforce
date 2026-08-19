@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { FlatList, StyleSheet, Text, View } from "react-native";
-import { PaginatedResult, TaskCategory, TaskDto } from "@renrenbang/shared-types";
+import { PaginatedResult, TaskCategory, TaskDto } from "@localhub/shared-types";
 import { api, buildQuery } from "@/lib/api";
 import { TASK_CATEGORY_LABELS, TASK_STATUS_LABELS } from "@/lib/labels";
 import { Badge, Card, PrimaryButton, SecondaryButton, colors } from "@/components/ui";

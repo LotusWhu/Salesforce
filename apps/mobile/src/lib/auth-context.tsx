@@ -1,4 +1,4 @@
-import { UserProfile } from "@renrenbang/shared-types";
+import { UserProfile } from "@localhub/shared-types";
 import { createContext, useContext, useEffect, useState } from "react";
 import { api, getToken, setToken } from "./api";
 

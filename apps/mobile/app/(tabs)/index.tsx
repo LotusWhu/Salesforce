@@ -13,7 +13,7 @@ export default function HomeTab() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: 16 }}>
       <View style={styles.hero}>
-        <Text style={styles.heroTitle}>邻里帮 · 华人生活服务平台</Text>
+        <Text style={styles.heroTitle}>LocalHub · 华人生活服务平台</Text>
         <Text style={styles.heroSubtitle}>跑腿代办、上门服务、拼车接送机、分类信息，一个 App 搞定海外生活大小事</Text>
       </View>
 

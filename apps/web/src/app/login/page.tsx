@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { OtpPurpose, RequestOtpResponse, VerifyOtpResponse } from "@renrenbang/shared-types";
+import { OtpPurpose, RequestOtpResponse, VerifyOtpResponse } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 

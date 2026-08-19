@@ -1,4 +1,4 @@
-import { CarpoolType } from "@renrenbang/shared-types";
+import { CarpoolType } from "@localhub/shared-types";
 import { Type } from "class-transformer";
 import { IsDateString, IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
 

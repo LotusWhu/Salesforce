@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { GeoPoint } from "@renrenbang/shared-types";
+import { GeoPoint } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { CARPOOL_TYPE_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";

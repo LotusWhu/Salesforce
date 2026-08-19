@@ -25,6 +25,11 @@ export class ServicesController {
     return this.services.getListingById(id);
   }
 
+  @Get("services/:id/next-available")
+  getNextAvailable(@Param("id") id: string) {
+    return this.services.getNextAvailable(id);
+  }
+
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @Post("services")

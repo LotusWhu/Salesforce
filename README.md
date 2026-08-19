@@ -1,13 +1,30 @@
-# 邻里帮 RenRenBang
+# LocalHub
+
+> **LocalHub 是技术占位名**，不是最终品牌名（品牌/商标需要另外确认，确定后全局替换 `@localhub/*` 包名、bundle id、UI 文案即可，详见下方"改名"说明）。
 
 面向海外华人社区的生活服务平台，覆盖 iOS / Android / Web 三端，一个 App 搞定：
 
 - **跑腿代办**（类似 Airtasker / 咸鱼帮忙）：发布任务 → 报价 → 接单 → 完成确认，覆盖代买票、代看房拍照、代排队、代购、搬家帮手等。
-- **上门服务预约**：居家保洁、上门美甲、钢琴教学等，选时段下单，**短信验证码确认预约**，确认后自动**同步到服务提供者的 Google 日历**。
-- **拼车接送机**（类似 Nearme）：接送机/市内拼车，可填航班号方便举牌接机，费用按座位均摊。
-- **分类信息**（类似 Craigslist）：二手交易、租房、招聘求职、社区活动等本地分类信息。
+- **上门服务预约**（对标咸鱼/一亿网 + Airtasker 两种模式）：拆成两档 —— **即时/家政**（保洁、美甲、理发、按摩、宠物照看，支持"最早可用时间"一键快速下单）与**竞价/比价**（钢琴教学、学科辅导，适合货比三家）。下单后**短信验证码确认预约**，确认后自动**同步到服务提供者的 Google 日历**。
+- **拼车接送机**（对标 NearMe）：To Airport / From Airport 表单（机场+航站楼、接送地点、登车时间或航班到达时间、乘客/行李数、单程往返、时间灵活度）。乘客发起需求后系统**自动匹配到已有行程**（就近时间优先），匹配不到则进入待匹配池，等司机发布新行程时自动吸纳；**单价随拼车人数增多动态下调**，愿意等待、拼进更多人的车更便宜。
+- **分类信息**（对标 yeeyi 分类信息）：本地资讯、房屋租赁/交易、车辆交易、求职招聘、二手市场、生意买卖、宠物交易、会计税务、物流搬运、清洁通渠、园艺绿化、水管电工、保姆月嫂、建筑家装、驾校招生、贷款、生活服务等近 20 个分类。
 
 默认面向澳洲华人社区（AUD 计价、+61 手机号、中文优先界面），架构上不绑定单一城市/国家，可扩展至北美等其他市场。
+
+## 关于改名
+
+`LocalHub` 只是开发阶段的技术占位名，全局替换脚本如下（品牌名确定后执行一次即可）：
+
+```bash
+# 把 NEW_NAME 换成正式品牌名（建议用不含空格的英文标识符）
+grep -rl "localhub\|LocalHub" --include="*.ts" --include="*.tsx" --include="*.json" --include="*.md" --include="*.yml" . \
+  | grep -v node_modules | xargs sed -i \
+    -e 's/@localhub\//@NEW_NAME\//g' \
+    -e 's/LocalHub/NEW_DISPLAY_NAME/g' \
+    -e 's/localhub/NEW_NAME/g'
+pnpm install   # 重新生成 lockfile
+```
+执行后记得同步改 `apps/mobile/app.json` 里的 `bundleIdentifier`/`package`（应用商店一旦发布这两个 ID 不能再改），以及 `docker-compose.yml` 的数据库名。
 
 ## 技术架构
 
@@ -41,8 +58,8 @@ pnpm install
 
 ```bash
 cp apps/api/.env.example apps/api/.env   # 填入 DATABASE_URL / TWILIO_* / GOOGLE_* / STRIPE_* 等
-pnpm --filter @renrenbang/api prisma:generate
-pnpm --filter @renrenbang/api prisma:migrate
+pnpm --filter @localhub/api prisma:generate
+pnpm --filter @localhub/api prisma:migrate
 pnpm dev:api        # http://localhost:3001  (Swagger 文档: /docs)
 ```
 
@@ -75,7 +92,9 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 
 ## 目录速览
 
-- `apps/api/prisma/schema.prisma`：完整数据模型（User、Task/TaskOffer、ServiceListing/Booking、CarpoolTrip/CarpoolBooking、ClassifiedListing、Review、Payment、Notification 等）。
+- `apps/api/prisma/schema.prisma`：完整数据模型（User、Task/TaskOffer、ServiceListing/Booking、CarpoolTrip/CarpoolBooking/CarpoolRequest、ClassifiedListing、Review、Payment、Notification 等）。
+- `apps/api/src/carpool/carpool.service.ts`：拼车自动匹配 + 动态定价核心逻辑（`matchPendingRequestsToTrip` / `computePricePerSeat`）。
+- `apps/api/src/services/services.service.ts`：`getNextAvailable` 计算"即时/家政"服务的最早可预约时段。
 - `apps/api/src/{tasks,services,carpool,classifieds}`：四大业务模块的 NestJS Controller/Service/DTO。
 - `apps/web/src/app/{tasks,services,carpool,classifieds}`：网页版对应页面（列表/发布/详情）。
 - `apps/mobile/app/(tabs)/{tasks,services,carpool,classifieds}`：App 端对应页面，底部 Tab + 二级 Stack 导航。

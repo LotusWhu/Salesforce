@@ -1,4 +1,4 @@
-import { ClassifiedStatus } from "@renrenbang/shared-types";
+import { ClassifiedStatus } from "@localhub/shared-types";
 import { IsEnum, IsNumber, IsOptional, IsString, Min } from "class-validator";
 
 export class UpdateClassifiedDto {

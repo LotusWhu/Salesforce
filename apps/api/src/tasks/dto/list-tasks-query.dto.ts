@@ -1,4 +1,4 @@
-import { TaskCategory, TaskStatus } from "@renrenbang/shared-types";
+import { TaskCategory, TaskStatus } from "@localhub/shared-types";
 import { Type } from "class-transformer";
 import { IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
 

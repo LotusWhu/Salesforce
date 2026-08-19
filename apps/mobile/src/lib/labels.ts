@@ -5,7 +5,7 @@ import {
   TaskCategory,
   TaskStatus,
   BookingStatus,
-} from "@renrenbang/shared-types";
+} from "@localhub/shared-types";
 
 export const TASK_CATEGORY_LABELS: Record<TaskCategory, string> = {
   [TaskCategory.BUY_TICKET]: "代买票",
@@ -59,11 +59,24 @@ export const CARPOOL_TYPE_LABELS: Record<CarpoolType, string> = {
 };
 
 export const CLASSIFIED_CATEGORY_LABELS: Record<ClassifiedCategory, string> = {
-  [ClassifiedCategory.SECOND_HAND]: "二手交易",
-  [ClassifiedCategory.RENTAL]: "租房",
-  [ClassifiedCategory.JOB]: "招聘/求职",
-  [ClassifiedCategory.COMMUNITY]: "社区活动",
-  [ClassifiedCategory.SERVICES]: "商家服务",
+  [ClassifiedCategory.LOCAL_INFO]: "本地资讯",
+  [ClassifiedCategory.RENTAL]: "房屋租赁",
+  [ClassifiedCategory.REAL_ESTATE_SALE]: "房屋交易",
+  [ClassifiedCategory.VEHICLE]: "车辆交易",
+  [ClassifiedCategory.JOB]: "求职招聘",
+  [ClassifiedCategory.SECOND_HAND]: "二手市场",
+  [ClassifiedCategory.BUSINESS_SALE]: "生意买卖",
+  [ClassifiedCategory.PET]: "宠物交易",
+  [ClassifiedCategory.ACCOUNTING_TAX]: "会计税务",
+  [ClassifiedCategory.MOVING_LOGISTICS]: "物流搬运",
+  [ClassifiedCategory.CLEANING]: "清洁通渠",
+  [ClassifiedCategory.GARDENING]: "园艺绿化",
+  [ClassifiedCategory.PLUMBING_ELECTRICAL]: "水管电工",
+  [ClassifiedCategory.NANNY_CONFINEMENT]: "保姆月嫂",
+  [ClassifiedCategory.RENOVATION]: "建筑家装",
+  [ClassifiedCategory.DRIVING_SCHOOL]: "驾校招生",
+  [ClassifiedCategory.LOAN]: "贷款",
+  [ClassifiedCategory.LIFE_SERVICES]: "生活服务",
   [ClassifiedCategory.FREE]: "免费赠送",
   [ClassifiedCategory.OTHER]: "其他",
 };

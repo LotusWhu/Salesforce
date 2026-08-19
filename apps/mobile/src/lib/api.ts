@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3001";
 
-const TOKEN_KEY = "renrenbang_token";
+const TOKEN_KEY = "localhub_token";
 
 let cachedToken: string | null | undefined;
 

@@ -1,9 +1,9 @@
 {
-  "name": "@renrenbang/mobile",
+  "name": "@localhub/mobile",
   "version": "0.1.0",
   "main": "expo-router/entry",
   "dependencies": {
-    "@renrenbang/shared-types": "workspace:*",
+    "@localhub/shared-types": "workspace:*",
     "@react-native-async-storage/async-storage": "2.2.0",
     "expo": "~57.0.14",
     "expo-constants": "~57.0.12",

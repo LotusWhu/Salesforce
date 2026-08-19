@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { TaskOfferDto, TaskStatus } from "@renrenbang/shared-types";
+import { TaskOfferDto, TaskStatus } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { TASK_CATEGORY_LABELS, TASK_STATUS_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";

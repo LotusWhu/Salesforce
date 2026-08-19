@@ -7,6 +7,7 @@ import { CarpoolService } from "./carpool.service";
 import { CreateCarpoolTripDto } from "./dto/create-trip.dto";
 import { CreateCarpoolBookingDto } from "./dto/create-carpool-booking.dto";
 import { ListCarpoolTripsQueryDto } from "./dto/list-trips-query.dto";
+import { CreateCarpoolRequestDto } from "./dto/create-carpool-request.dto";
 
 @ApiTags("carpool")
 @Controller("carpool")
@@ -56,5 +57,28 @@ export class CarpoolController {
   @Get("bookings/mine")
   listMyBookings(@CurrentUser() user: User) {
     return this.carpool.listMyBookings(user.id);
+  }
+
+  // ---------------- 拼车需求 (NearMe 风格: 乘客发起需求, 系统自动匹配) ----------------
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post("requests")
+  createRequest(@CurrentUser() user: User, @Body() dto: CreateCarpoolRequestDto) {
+    return this.carpool.createRequest(user.id, dto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get("requests/mine")
+  listMyRequests(@CurrentUser() user: User) {
+    return this.carpool.listMyRequests(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post("requests/:id/cancel")
+  cancelRequest(@CurrentUser() user: User, @Param("id") id: string) {
+    return this.carpool.cancelRequest(id, user.id);
   }
 }

@@ -1,4 +1,4 @@
-import { TaskStatus } from "@renrenbang/shared-types";
+import { TaskStatus } from "@localhub/shared-types";
 import { IsDateString, IsEnum, IsNumber, IsOptional, IsString, Min } from "class-validator";
 
 export class UpdateTaskDto {

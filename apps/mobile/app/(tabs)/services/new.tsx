@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { CreateServiceListingDto, PriceType, ServiceCategory, ServiceListingDto } from "@renrenbang/shared-types";
+import { CreateServiceListingDto, PriceType, ServiceCategory, ServiceListingDto } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";

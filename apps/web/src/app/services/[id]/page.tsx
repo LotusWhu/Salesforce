@@ -2,10 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { BookingDto } from "@renrenbang/shared-types";
+import { BookingDto, NextAvailableSlotDto, ServiceCategory, ServiceTier, SERVICE_CATEGORY_TIER } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+
+function toLocalDateInput(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function toLocalTimeInput(d: Date) {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
 
 interface ServiceDetail {
   id: string;
@@ -35,6 +43,7 @@ export default function ServiceDetailPage() {
   const [booking, setBooking] = useState<BookingDto | null>(null);
   const [otpCode, setOtpCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [quickBooking, setQuickBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -43,6 +52,29 @@ export default function ServiceDetailPage() {
   }, [id]);
 
   if (!service) return <p className="text-neutral-500">加载中...</p>;
+
+  const isImmediateTier = SERVICE_CATEGORY_TIER[service.category as ServiceCategory] === ServiceTier.IMMEDIATE;
+
+  const quickBookEarliest = async () => {
+    setError(null);
+    setMessage(null);
+    setQuickBooking(true);
+    try {
+      const next = await api.get<NextAvailableSlotDto | null>(`/services/${service.id}/next-available`);
+      if (!next) {
+        setError("暂时没有可用时段，请手动选择日期时间");
+        return;
+      }
+      const start = new Date(next.scheduledStart);
+      setDate(toLocalDateInput(start));
+      setStartTime(toLocalTimeInput(start));
+      setMessage(`已为你自动选中最早可用时段: ${start.toLocaleString()}，请确认地址后提交预约`);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "获取最早可用时段失败");
+    } finally {
+      setQuickBooking(false);
+    }
+  };
 
   const createBooking = async () => {
     setError(null);
@@ -115,9 +147,24 @@ export default function ServiceDetailPage() {
         </div>
       )}
 
+      {user && !booking && isImmediateTier && (
+        <div className="card">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold">即时/家政服务，可快速下单</h2>
+              <p className="text-sm text-neutral-500">一键选中最早可用时段，确认地址即可提交</p>
+            </div>
+            <button className="btn-secondary text-sm" disabled={quickBooking} onClick={quickBookEarliest}>
+              {quickBooking ? "查找中..." : "立即预约(最早可用)"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {user && !booking && (
         <div className="card space-y-3">
           <h2 className="font-semibold">预约此服务</h2>
+          {message && <p className="text-sm text-green-600">{message}</p>}
           <div className="flex gap-3">
             <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
             <input type="time" className="input" value={startTime} onChange={(e) => setStartTime(e.target.value)} />

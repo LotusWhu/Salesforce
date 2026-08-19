@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { NotificationType, TaskOfferStatus, TaskStatus } from "@renrenbang/shared-types";
+import { NotificationType, TaskOfferStatus, TaskStatus } from "@localhub/shared-types";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../common/services/notifications.service";
 import { serializeTask } from "../common/serializers";

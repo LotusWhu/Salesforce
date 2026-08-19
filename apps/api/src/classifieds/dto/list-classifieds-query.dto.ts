@@ -1,4 +1,4 @@
-import { ClassifiedCategory } from "@renrenbang/shared-types";
+import { ClassifiedCategory } from "@localhub/shared-types";
 import { Type } from "class-transformer";
 import { IsEnum, IsInt, IsNumber, IsOptional, IsString, Min } from "class-validator";
 

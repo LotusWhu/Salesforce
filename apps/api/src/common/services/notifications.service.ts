@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { NotificationType } from "@renrenbang/shared-types";
+import { NotificationType } from "@localhub/shared-types";
 import { PrismaService } from "../../prisma/prisma.service";
 
 @Injectable()

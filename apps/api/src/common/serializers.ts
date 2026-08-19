@@ -1,8 +1,8 @@
-import { GeoPoint } from "@renrenbang/shared-types";
+import { GeoPoint } from "@localhub/shared-types";
 
 /**
  * Prisma 里地理位置一律存成扁平的 xxxLat/xxxLng/xxxAddress 字段，
- * 但 @renrenbang/shared-types 的 DTO 契约（web/mobile 两端都是照着这个写的）
+ * 但 @localhub/shared-types 的 DTO 契约（web/mobile 两端都是照着这个写的）
  * 用的是嵌套的 { lat, lng, address } 结构。这里统一做转换，避免每个 controller
  * 各自拼接、字段名对不上导致前端拿到 undefined。
  */

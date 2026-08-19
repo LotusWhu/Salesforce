@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { OtpChannel, OtpPurpose } from "@renrenbang/shared-types";
+import { OtpChannel, OtpPurpose } from "@localhub/shared-types";
 import { PrismaService } from "../prisma/prisma.service";
 import { OtpService } from "../common/services/otp.service";
 

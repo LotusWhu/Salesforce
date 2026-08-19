@@ -1,4 +1,4 @@
-import { CarpoolType } from "@renrenbang/shared-types";
+import { CarpoolType } from "@localhub/shared-types";
 import { Type } from "class-transformer";
 import { IsDateString, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, ValidateNested } from "class-validator";
 import { GeoPointDto } from "../../tasks/dto/geo-point.dto";

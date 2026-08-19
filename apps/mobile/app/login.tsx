@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
-import { OtpPurpose, RequestOtpResponse, VerifyOtpResponse } from "@renrenbang/shared-types";
+import { OtpPurpose, RequestOtpResponse, VerifyOtpResponse } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";

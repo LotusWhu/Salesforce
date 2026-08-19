@@ -10,6 +10,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@localhub/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@nestjs/common':
         specifier: ^10.4.4
         version: 10.4.22(class-transformer@0.5.1)(class-validator@0.14.4)(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -37,9 +40,6 @@ importers:
       '@prisma/client':
         specifier: ^5.20.0
         version: 5.22.0(prisma@5.22.0)
-      '@renrenbang/shared-types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
       class-transformer:
         specifier: ^0.5.1
         version: 0.5.1
@@ -89,12 +89,12 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@localhub/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
       '@react-native-async-storage/async-storage':
         specifier: 2.2.0
         version: 2.2.0(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.87.0(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))
-      '@renrenbang/shared-types':
-        specifier: workspace:*
-        version: link:../../packages/shared-types
       expo:
         specifier: ~57.0.14
         version: 57.0.14(@babel/core@7.29.7)(@expo/dom-webview@57.0.1)(@expo/metro-runtime@57.0.11)(expo-router@57.0.14)(react-dom@18.3.1(react@19.2.3))(react-native-worklets@0.11.4(@babel/core@7.29.7)(@react-native/metro-config@0.87.0(@babel/core@7.29.7))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.87.0(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7)(@react-native/metro-config@0.87.0(@babel/core@7.29.7))(@types/react@19.2.18)(react@19.2.3))(react@19.2.3)(typescript@6.0.3)
@@ -138,7 +138,7 @@ importers:
 
   apps/web:
     dependencies:
-      '@renrenbang/shared-types':
+      '@localhub/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       next:

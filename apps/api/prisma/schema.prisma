@@ -28,41 +28,42 @@ enum Language {
 }
 
 model User {
-  id                     String   @id @default(cuid())
-  phone                  String   @unique
-  email                  String?  @unique
-  name                   String
-  avatarUrl              String?
-  role                   UserRole @default(CUSTOMER)
-  language               Language @default(zh)
-  city                   String?
-  phoneVerified          Boolean  @default(false)
-  ratingAvg              Float    @default(0)
-  ratingCount            Int      @default(0)
+  id                      String   @id @default(cuid())
+  phone                   String   @unique
+  email                   String?  @unique
+  name                    String
+  avatarUrl               String?
+  role                    UserRole @default(CUSTOMER)
+  language                Language @default(zh)
+  city                    String?
+  phoneVerified           Boolean  @default(false)
+  ratingAvg               Float    @default(0)
+  ratingCount             Int      @default(0)
   // Google Calendar OAuth (用于上门服务预约同步日程)
-  googleRefreshToken     String?
-  googleCalendarId       String?
-  googleCalendarConnected Boolean @default(false)
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
+  googleRefreshToken      String?
+  googleCalendarId        String?
+  googleCalendarConnected Boolean  @default(false)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
-  tasksPosted       Task[]              @relation("TaskPoster")
-  tasksAssigned     Task[]              @relation("TaskTasker")
-  taskOffers        TaskOffer[]
-  services          ServiceListing[]
-  bookingsAsCustomer Booking[]          @relation("BookingCustomer")
-  bookingsAsProvider Booking[]          @relation("BookingProvider")
-  carpoolTrips      CarpoolTrip[]
-  carpoolBookings   CarpoolBooking[]
-  classifieds       ClassifiedListing[]
-  reviewsGiven      Review[]            @relation("ReviewsGiven")
-  reviewsReceived   Review[]            @relation("ReviewsReceived")
-  messages          Message[]
-  conversations     ConversationParticipant[]
-  notifications     Notification[]
-  paymentsAsPayer   Payment[]           @relation("PaymentsAsPayer")
-  paymentsAsPayee   Payment[]           @relation("PaymentsAsPayee")
-  otpCodes          OtpCode[]
+  tasksPosted        Task[]                    @relation("TaskPoster")
+  tasksAssigned      Task[]                    @relation("TaskTasker")
+  taskOffers         TaskOffer[]
+  services           ServiceListing[]
+  bookingsAsCustomer Booking[]                 @relation("BookingCustomer")
+  bookingsAsProvider Booking[]                 @relation("BookingProvider")
+  carpoolTrips       CarpoolTrip[]
+  carpoolBookings    CarpoolBooking[]
+  carpoolRequests    CarpoolRequest[]
+  classifieds        ClassifiedListing[]
+  reviewsGiven       Review[]                  @relation("ReviewsGiven")
+  reviewsReceived    Review[]                  @relation("ReviewsReceived")
+  messages           Message[]
+  conversations      ConversationParticipant[]
+  notifications      Notification[]
+  paymentsAsPayer    Payment[]                 @relation("PaymentsAsPayer")
+  paymentsAsPayee    Payment[]                 @relation("PaymentsAsPayee")
+  otpCodes           OtpCode[]
 
   @@index([city])
 }
@@ -79,17 +80,17 @@ enum OtpChannel {
 }
 
 model OtpCode {
-  id        String     @id @default(cuid())
-  phone     String
-  codeHash  String
-  purpose   OtpPurpose
-  channel   OtpChannel @default(SMS)
-  userId    String?
-  user      User?      @relation(fields: [userId], references: [id])
-  expiresAt DateTime
+  id         String     @id @default(cuid())
+  phone      String
+  codeHash   String
+  purpose    OtpPurpose
+  channel    OtpChannel @default(SMS)
+  userId     String?
+  user       User?      @relation(fields: [userId], references: [id])
+  expiresAt  DateTime
   consumedAt DateTime?
-  attempts  Int        @default(0)
-  createdAt DateTime   @default(now())
+  attempts   Int        @default(0)
+  createdAt  DateTime   @default(now())
 
   @@index([phone, purpose])
 }
@@ -123,29 +124,29 @@ enum TaskStatus {
 }
 
 model Task {
-  id              String       @id @default(cuid())
-  posterId        String
-  poster          User         @relation("TaskPoster", fields: [posterId], references: [id])
-  category        TaskCategory
-  title           String
-  description     String
-  budgetMin       Decimal?     @db.Decimal(10, 2)
-  budgetMax       Decimal?     @db.Decimal(10, 2)
-  currency        String       @default("AUD")
-  locationLat     Float?
-  locationLng     Float?
-  locationAddress String?
-  city            String?
-  isRemote        Boolean      @default(false)
-  dueDate         DateTime?
-  status          TaskStatus   @default(OPEN)
+  id               String       @id @default(cuid())
+  posterId         String
+  poster           User         @relation("TaskPoster", fields: [posterId], references: [id])
+  category         TaskCategory
+  title            String
+  description      String
+  budgetMin        Decimal?     @db.Decimal(10, 2)
+  budgetMax        Decimal?     @db.Decimal(10, 2)
+  currency         String       @default("AUD")
+  locationLat      Float?
+  locationLng      Float?
+  locationAddress  String?
+  city             String?
+  isRemote         Boolean      @default(false)
+  dueDate          DateTime?
+  status           TaskStatus   @default(OPEN)
   assignedTaskerId String?
-  assignedTasker  User?        @relation("TaskTasker", fields: [assignedTaskerId], references: [id])
-  attachmentUrls  String[]     @default([])
-  proofUrls       String[]     @default([])
-  completionNote  String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  assignedTasker   User?        @relation("TaskTasker", fields: [assignedTaskerId], references: [id])
+  attachmentUrls   String[]     @default([])
+  proofUrls        String[]     @default([])
+  completionNote   String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   offers   TaskOffer[]
   reviews  Review[]    @relation("TaskReviews")
@@ -242,24 +243,24 @@ enum BookingStatus {
 }
 
 model Booking {
-  id                  String         @id @default(cuid())
-  serviceId           String
-  service             ServiceListing @relation(fields: [serviceId], references: [id])
-  customerId          String
-  customer            User           @relation("BookingCustomer", fields: [customerId], references: [id])
-  providerId          String
-  provider            User           @relation("BookingProvider", fields: [providerId], references: [id])
-  scheduledStart      DateTime
-  scheduledEnd        DateTime
-  addressLat          Float?
-  addressLng          Float?
-  addressText         String?
-  status              BookingStatus  @default(PENDING_CONFIRMATION)
+  id                    String         @id @default(cuid())
+  serviceId             String
+  service               ServiceListing @relation(fields: [serviceId], references: [id])
+  customerId            String
+  customer              User           @relation("BookingCustomer", fields: [customerId], references: [id])
+  providerId            String
+  provider              User           @relation("BookingProvider", fields: [providerId], references: [id])
+  scheduledStart        DateTime
+  scheduledEnd          DateTime
+  addressLat            Float?
+  addressLng            Float?
+  addressText           String?
+  status                BookingStatus  @default(PENDING_CONFIRMATION)
   googleCalendarEventId String?
-  otpVerifiedAt       DateTime?
-  notes               String?
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  otpVerifiedAt         DateTime?
+  notes                 String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
 
   reviews  Review[]  @relation("BookingReviews")
   payments Payment[] @relation("BookingPayments")
@@ -287,28 +288,31 @@ enum CarpoolTripStatus {
 }
 
 model CarpoolTrip {
-  id                String            @id @default(cuid())
-  driverId          String
-  driver            User              @relation(fields: [driverId], references: [id])
-  type              CarpoolType
-  originLat         Float
-  originLng         Float
-  originAddress     String
-  destinationLat    Float
-  destinationLng    Float
+  id                 String            @id @default(cuid())
+  driverId           String
+  driver             User              @relation(fields: [driverId], references: [id])
+  type               CarpoolType
+  originLat          Float
+  originLng          Float
+  originAddress      String
+  destinationLat     Float
+  destinationLng     Float
   destinationAddress String
-  city              String?
-  departureTime     DateTime
-  flightNumber      String?
-  totalSeats        Int
-  seatsAvailable    Int
-  pricePerSeat      Decimal           @db.Decimal(10, 2)
-  currency          String            @default("AUD")
-  notes             String?
-  status            CarpoolTripStatus @default(OPEN)
-  createdAt         DateTime          @default(now())
+  city               String?
+  departureTime      DateTime
+  flightNumber       String?
+  totalSeats         Int
+  seatsAvailable     Int
+  // basePricePerSeat: 满座前的起始单价; pricePerSeat: 当前有效单价，随拼车人数增多而动态下调
+  basePricePerSeat   Decimal           @db.Decimal(10, 2)
+  pricePerSeat       Decimal           @db.Decimal(10, 2)
+  currency           String            @default("AUD")
+  notes              String?
+  status             CarpoolTripStatus @default(OPEN)
+  createdAt          DateTime          @default(now())
 
   bookings CarpoolBooking[]
+  requests CarpoolRequest[]
 
   @@index([type, city, departureTime])
 }
@@ -321,19 +325,66 @@ enum CarpoolBookingStatus {
 }
 
 model CarpoolBooking {
-  id           String               @id @default(cuid())
-  tripId       String
-  trip         CarpoolTrip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
-  passengerId  String
-  passenger    User                 @relation(fields: [passengerId], references: [id])
-  seats        Int                  @default(1)
-  totalPrice   Decimal              @db.Decimal(10, 2)
-  status       CarpoolBookingStatus @default(PENDING)
-  createdAt    DateTime             @default(now())
+  id          String               @id @default(cuid())
+  tripId      String
+  trip        CarpoolTrip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  passengerId String
+  passenger   User                 @relation(fields: [passengerId], references: [id])
+  seats       Int                  @default(1)
+  totalPrice  Decimal              @db.Decimal(10, 2)
+  status      CarpoolBookingStatus @default(PENDING)
+  createdAt   DateTime             @default(now())
 
-  payments Payment[] @relation("CarpoolBookingPayments")
+  payments Payment[]       @relation("CarpoolBookingPayments")
+  request  CarpoolRequest?
 
   @@index([tripId])
+}
+
+// ---------------------------------------------------------------------------
+// 拼车需求 (乘客发起的接送机需求，系统自动匹配到已有行程或等待新行程吸纳)
+// ---------------------------------------------------------------------------
+
+enum CarpoolFareMode {
+  ONE_WAY
+  ROUND_TRIP
+}
+
+enum CarpoolRequestStatus {
+  PENDING // 待匹配，进入匹配池等待
+  MATCHED // 已自动匹配到某个行程
+  CANCELLED
+  EXPIRED
+}
+
+model CarpoolRequest {
+  id                   String               @id @default(cuid())
+  passengerId          String
+  passenger            User                 @relation(fields: [passengerId], references: [id])
+  type                 CarpoolType // AIRPORT_DROPOFF=送机(To Airport) / AIRPORT_PICKUP=接机(From Airport)
+  airport              String
+  terminal             String?
+  otherLocationLat     Float
+  otherLocationLng     Float
+  otherLocationAddress String
+  city                 String?
+  // 送机: 期望登车时间; 接机: 航班到达时间
+  scheduledTime        DateTime
+  flightNumber         String?
+  passengerCount       Int                  @default(1)
+  luggageCount         Int                  @default(1)
+  fareMode             CarpoolFareMode      @default(ONE_WAY)
+  returnScheduledTime  DateTime?
+  // 可接受的匹配时间窗口(分钟)，越大越容易被拼进同一趟车、单价越低
+  flexibilityMinutes   Int                  @default(60)
+  status               CarpoolRequestStatus @default(PENDING)
+  matchedTripId        String?
+  matchedTrip          CarpoolTrip?         @relation(fields: [matchedTripId], references: [id])
+  matchedBookingId     String?              @unique
+  matchedBooking       CarpoolBooking?      @relation(fields: [matchedBookingId], references: [id])
+  createdAt            DateTime             @default(now())
+
+  @@index([type, city, scheduledTime, status])
 }
 
 // ---------------------------------------------------------------------------
@@ -341,13 +392,26 @@ model CarpoolBooking {
 // ---------------------------------------------------------------------------
 
 enum ClassifiedCategory {
-  SECOND_HAND
-  RENTAL
-  JOB
-  COMMUNITY
-  SERVICES
-  FREE
-  OTHER
+  LOCAL_INFO // 本地资讯
+  RENTAL // 房屋租赁
+  REAL_ESTATE_SALE // 房屋交易
+  VEHICLE // 车辆交易
+  JOB // 求职招聘
+  SECOND_HAND // 二手市场
+  BUSINESS_SALE // 生意买卖
+  PET // 宠物交易
+  ACCOUNTING_TAX // 会计税务
+  MOVING_LOGISTICS // 物流搬运
+  CLEANING // 清洁通渠
+  GARDENING // 园艺绿化
+  PLUMBING_ELECTRICAL // 水管电工
+  NANNY_CONFINEMENT // 保姆月嫂
+  RENOVATION // 建筑家装
+  DRIVING_SCHOOL // 驾校招生
+  LOAN // 贷款
+  LIFE_SERVICES // 生活服务
+  FREE // 免费赠送
+  OTHER // 其他
 }
 
 enum ClassifiedStatus {
@@ -358,22 +422,22 @@ enum ClassifiedStatus {
 }
 
 model ClassifiedListing {
-  id          String              @id @default(cuid())
+  id          String             @id @default(cuid())
   posterId    String
-  poster      User                @relation(fields: [posterId], references: [id])
+  poster      User               @relation(fields: [posterId], references: [id])
   category    ClassifiedCategory
   title       String
   description String
-  price       Decimal?            @db.Decimal(10, 2)
-  currency    String              @default("AUD")
-  photos      String[]            @default([])
+  price       Decimal?           @db.Decimal(10, 2)
+  currency    String             @default("AUD")
+  photos      String[]           @default([])
   locationLat Float?
   locationLng Float?
   city        String?
-  status      ClassifiedStatus    @default(ACTIVE)
-  viewCount   Int                 @default(0)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  status      ClassifiedStatus   @default(ACTIVE)
+  viewCount   Int                @default(0)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
 
   @@index([category, city, status])
 }
@@ -390,11 +454,11 @@ enum ConversationContextType {
 }
 
 model Conversation {
-  id             String                   @id @default(cuid())
-  contextType    ConversationContextType
-  contextId      String
-  lastMessageAt  DateTime?
-  createdAt      DateTime                 @default(now())
+  id            String                  @id @default(cuid())
+  contextType   ConversationContextType
+  contextId     String
+  lastMessageAt DateTime?
+  createdAt     DateTime                @default(now())
 
   participants ConversationParticipant[]
   messages     Message[]

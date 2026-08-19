@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { PaymentRelatedType, PaymentStatus } from "@renrenbang/shared-types";
+import { PaymentRelatedType, PaymentStatus } from "@localhub/shared-types";
 import { PrismaService } from "../prisma/prisma.service";
 import { StripeService } from "../common/services/stripe.service";
 import { CreatePaymentIntentDto } from "./dto/create-payment-intent.dto";

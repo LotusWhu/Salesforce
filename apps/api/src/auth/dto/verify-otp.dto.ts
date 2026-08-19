@@ -1,4 +1,4 @@
-import { OtpPurpose } from "@renrenbang/shared-types";
+import { OtpPurpose } from "@localhub/shared-types";
 import { IsEnum, Length, Matches } from "class-validator";
 
 export class VerifyOtpDto {

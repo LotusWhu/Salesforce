@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CarpoolTripDto, CarpoolType } from "@renrenbang/shared-types";
+import { CarpoolTripDto, CarpoolType } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { CARPOOL_TYPE_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";

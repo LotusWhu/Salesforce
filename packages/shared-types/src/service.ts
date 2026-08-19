@@ -78,3 +78,28 @@ export interface ListServicesQuery {
   page?: number;
   pageSize?: number;
 }
+
+// ---------------- 服务分层: 即时/家政 vs 竞价/比价 ----------------
+// 即时/家政: 保洁/美甲/理发/按摩/宠物照看等标准化、时效性强的服务，主打"最早可用时间快速下单"
+// 竞价/比价: 钢琴教学/学科辅导等更依赖个人资质、适合货比三家的服务
+export enum ServiceTier {
+  IMMEDIATE = "IMMEDIATE",
+  BIDDING = "BIDDING",
+}
+
+export const SERVICE_CATEGORY_TIER: Record<ServiceCategory, ServiceTier> = {
+  HOUSE_CLEANING: ServiceTier.IMMEDIATE,
+  MOVE_OUT_CLEANING: ServiceTier.IMMEDIATE,
+  NAIL_SALON: ServiceTier.IMMEDIATE,
+  HAIR_STYLING: ServiceTier.IMMEDIATE,
+  MASSAGE: ServiceTier.IMMEDIATE,
+  PET_CARE: ServiceTier.IMMEDIATE,
+  PIANO_LESSON: ServiceTier.BIDDING,
+  TUTORING: ServiceTier.BIDDING,
+  OTHER: ServiceTier.BIDDING,
+};
+
+export interface NextAvailableSlotDto {
+  scheduledStart: string;
+  scheduledEnd: string;
+}

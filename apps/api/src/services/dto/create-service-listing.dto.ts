@@ -1,4 +1,4 @@
-import { PriceType, ServiceCategory } from "@renrenbang/shared-types";
+import { PriceType, ServiceCategory } from "@localhub/shared-types";
 import { IsArray, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 
 export class CreateServiceListingDto {

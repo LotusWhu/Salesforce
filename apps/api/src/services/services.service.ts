@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { BookingStatus, NotificationType, OtpPurpose } from "@renrenbang/shared-types";
+import { BookingStatus, NotificationType, OtpPurpose } from "@localhub/shared-types";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../common/services/notifications.service";
 import { GoogleCalendarService } from "../common/services/google-calendar.service";
@@ -115,6 +115,70 @@ export class ServicesService {
     if (!fits) {
       throw new BadRequestException("所选时间不在服务提供者的可预约时段内");
     }
+  }
+
+  /**
+   * 计算该服务未来一段时间内(默认7天)最早的一个可预约时段，
+   * 结合服务提供者的每周可预约时段 + 已有预约冲突计算得出，
+   * 用于"即时/家政"类服务的「立即预约(最早可用)」快捷入口。
+   */
+  async getNextAvailable(serviceId: string) {
+    const LOOKAHEAD_DAYS = 7;
+    const SLOT_GRANULARITY_MIN = 15;
+
+    const listing = await this.prisma.serviceListing.findUnique({ where: { id: serviceId } });
+    if (!listing || !listing.active) throw new NotFoundException("服务不存在或已下架");
+
+    const availability = await this.prisma.serviceAvailability.findMany({ where: { serviceId } });
+    if (availability.length === 0) return null;
+
+    const now = new Date();
+    const windowEnd = new Date(now.getTime() + LOOKAHEAD_DAYS * DAY_MS);
+    const upcomingBookings = await this.prisma.booking.findMany({
+      where: {
+        providerId: listing.providerId,
+        status: { in: [BookingStatus.PENDING_CONFIRMATION, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS] },
+        scheduledStart: { lt: windowEnd },
+        scheduledEnd: { gt: now },
+      },
+      orderBy: { scheduledStart: "asc" },
+    });
+
+    const roundUp = (d: Date) => {
+      const ms = SLOT_GRANULARITY_MIN * 60 * 1000;
+      return new Date(Math.ceil(d.getTime() / ms) * ms);
+    };
+
+    for (let dayOffset = 0; dayOffset < LOOKAHEAD_DAYS; dayOffset++) {
+      const day = new Date(now);
+      day.setDate(day.getDate() + dayOffset);
+      const dayOfWeek = day.getDay();
+      const daySlots = availability
+        .filter((s) => s.dayOfWeek === dayOfWeek)
+        .sort((a, b) => this.timeToMinutes(a.startTime) - this.timeToMinutes(b.startTime));
+
+      for (const slot of daySlots) {
+        const slotStart = new Date(day);
+        slotStart.setHours(0, this.timeToMinutes(slot.startTime), 0, 0);
+        const slotEnd = new Date(day);
+        slotEnd.setHours(0, this.timeToMinutes(slot.endTime), 0, 0);
+
+        let candidateStart = roundUp(slotStart < now ? now : slotStart);
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const candidateEnd = new Date(candidateStart.getTime() + listing.durationMinutes * 60 * 1000);
+          if (candidateEnd > slotEnd) break;
+
+          const conflict = upcomingBookings.find((b) => b.scheduledStart < candidateEnd && b.scheduledEnd > candidateStart);
+          if (!conflict) {
+            return { scheduledStart: candidateStart.toISOString(), scheduledEnd: candidateEnd.toISOString() };
+          }
+          candidateStart = roundUp(conflict.scheduledEnd);
+        }
+      }
+    }
+
+    return null;
   }
 
   async createBooking(customerId: string, dto: CreateBookingDto) {

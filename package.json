@@ -1,5 +1,5 @@
 {
-  "name": "renrenbang",
+  "name": "localhub",
   "private": true,
   "version": "0.1.0",
   "description": "华人生活服务平台 - 任务外包/上门服务/拼车接送机/分类信息",
@@ -8,11 +8,11 @@
   },
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "postinstall": "pnpm --filter @renrenbang/shared-types build",
-    "dev:api": "pnpm --filter @renrenbang/api dev",
-    "dev:web": "pnpm --filter @renrenbang/web dev",
-    "dev:mobile": "pnpm --filter @renrenbang/mobile start",
-    "build": "pnpm --filter @renrenbang/shared-types build && pnpm -r --filter '!@renrenbang/shared-types' build",
+    "postinstall": "pnpm --filter @localhub/shared-types build",
+    "dev:api": "pnpm --filter @localhub/api dev",
+    "dev:web": "pnpm --filter @localhub/web dev",
+    "dev:mobile": "pnpm --filter @localhub/mobile start",
+    "build": "pnpm --filter @localhub/shared-types build && pnpm -r --filter '!@localhub/shared-types' build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
   }

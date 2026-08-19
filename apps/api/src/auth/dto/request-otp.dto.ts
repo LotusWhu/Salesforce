@@ -1,4 +1,4 @@
-import { OtpChannel, OtpPurpose } from "@renrenbang/shared-types";
+import { OtpChannel, OtpPurpose } from "@localhub/shared-types";
 import { IsEnum, IsOptional, Matches } from "class-validator";
 
 export class RequestOtpDto {

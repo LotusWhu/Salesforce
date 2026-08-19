@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { ClassifiedCategory, ClassifiedListingDto, PaginatedResult } from "@renrenbang/shared-types";
+import { ClassifiedCategory, ClassifiedListingDto, PaginatedResult } from "@localhub/shared-types";
 import { api, buildQuery } from "@/lib/api";
 import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
 import { Badge, Card, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";

@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "邻里帮 RenRenBang",
-    "slug": "renrenbang",
-    "scheme": "renrenbang",
+    "name": "LocalHub",
+    "slug": "localhub",
+    "scheme": "localhub",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,10 +10,10 @@
     "plugins": ["expo-router"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.renrenbang.app"
+      "bundleIdentifier": "com.localhub.app"
     },
     "android": {
-      "package": "com.renrenbang.app",
+      "package": "com.localhub.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

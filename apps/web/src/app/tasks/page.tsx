@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { PaginatedResult, TaskCategory, TaskDto } from "@renrenbang/shared-types";
+import { PaginatedResult, TaskCategory, TaskDto } from "@localhub/shared-types";
 import { api, buildQuery } from "@/lib/api";
 import { TASK_CATEGORY_LABELS, TASK_STATUS_LABELS } from "@/lib/labels";
 

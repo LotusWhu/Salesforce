@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
-import { ClassifiedCategory, ClassifiedListingDto } from "@renrenbang/shared-types";
+import { ClassifiedCategory, ClassifiedListingDto } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";

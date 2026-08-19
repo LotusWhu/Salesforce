@@ -1,4 +1,4 @@
-import { Language } from "@renrenbang/shared-types";
+import { Language } from "@localhub/shared-types";
 import { IsEmail, IsEnum, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class UpdateProfileDto {

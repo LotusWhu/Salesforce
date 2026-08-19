@@ -1,4 +1,4 @@
-import { ServiceCategory } from "@renrenbang/shared-types";
+import { ServiceCategory } from "@localhub/shared-types";
 import { Type } from "class-transformer";
 import { IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
 

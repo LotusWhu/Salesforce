@@ -3,7 +3,7 @@ import { ApiTags } from "@nestjs/swagger";
 import { AuthService } from "./auth.service";
 import { RequestOtpDto } from "./dto/request-otp.dto";
 import { VerifyOtpDto } from "./dto/verify-otp.dto";
-import { OtpPurpose } from "@renrenbang/shared-types";
+import { OtpPurpose } from "@localhub/shared-types";
 import { BadRequestException } from "@nestjs/common";
 
 @ApiTags("auth")

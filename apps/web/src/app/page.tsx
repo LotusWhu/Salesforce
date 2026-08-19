@@ -31,7 +31,7 @@ export default function HomePage() {
   return (
     <div>
       <section className="mb-8 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 px-6 py-10 text-white">
-        <h1 className="text-2xl font-bold sm:text-3xl">邻里帮 - 华人生活服务平台</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">LocalHub - 华人生活服务平台</h1>
         <p className="mt-2 max-w-2xl text-brand-50">
           跑腿代办、上门服务、拼车接送机、分类信息，一个 App 搞定海外华人生活大小事。
         </p>

@@ -38,7 +38,13 @@ CREATE TYPE "CarpoolTripStatus" AS ENUM ('OPEN', 'FULL', 'CLOSED', 'CANCELLED', 
 CREATE TYPE "CarpoolBookingStatus" AS ENUM ('PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED');
 
 -- CreateEnum
-CREATE TYPE "ClassifiedCategory" AS ENUM ('SECOND_HAND', 'RENTAL', 'JOB', 'COMMUNITY', 'SERVICES', 'FREE', 'OTHER');
+CREATE TYPE "CarpoolFareMode" AS ENUM ('ONE_WAY', 'ROUND_TRIP');
+
+-- CreateEnum
+CREATE TYPE "CarpoolRequestStatus" AS ENUM ('PENDING', 'MATCHED', 'CANCELLED', 'EXPIRED');
+
+-- CreateEnum
+CREATE TYPE "ClassifiedCategory" AS ENUM ('LOCAL_INFO', 'RENTAL', 'REAL_ESTATE_SALE', 'VEHICLE', 'JOB', 'SECOND_HAND', 'BUSINESS_SALE', 'PET', 'ACCOUNTING_TAX', 'MOVING_LOGISTICS', 'CLEANING', 'GARDENING', 'PLUMBING_ELECTRICAL', 'NANNY_CONFINEMENT', 'RENOVATION', 'DRIVING_SCHOOL', 'LOAN', 'LIFE_SERVICES', 'FREE', 'OTHER');
 
 -- CreateEnum
 CREATE TYPE "ClassifiedStatus" AS ENUM ('ACTIVE', 'SOLD', 'EXPIRED', 'REMOVED');
@@ -202,6 +208,7 @@ CREATE TABLE "CarpoolTrip" (
     "flightNumber" TEXT,
     "totalSeats" INTEGER NOT NULL,
     "seatsAvailable" INTEGER NOT NULL,
+    "basePricePerSeat" DECIMAL(10,2) NOT NULL,
     "pricePerSeat" DECIMAL(10,2) NOT NULL,
     "currency" TEXT NOT NULL DEFAULT 'AUD',
     "notes" TEXT,
@@ -222,6 +229,32 @@ CREATE TABLE "CarpoolBooking" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "CarpoolBooking_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "CarpoolRequest" (
+    "id" TEXT NOT NULL,
+    "passengerId" TEXT NOT NULL,
+    "type" "CarpoolType" NOT NULL,
+    "airport" TEXT NOT NULL,
+    "terminal" TEXT,
+    "otherLocationLat" DOUBLE PRECISION NOT NULL,
+    "otherLocationLng" DOUBLE PRECISION NOT NULL,
+    "otherLocationAddress" TEXT NOT NULL,
+    "city" TEXT,
+    "scheduledTime" TIMESTAMP(3) NOT NULL,
+    "flightNumber" TEXT,
+    "passengerCount" INTEGER NOT NULL DEFAULT 1,
+    "luggageCount" INTEGER NOT NULL DEFAULT 1,
+    "fareMode" "CarpoolFareMode" NOT NULL DEFAULT 'ONE_WAY',
+    "returnScheduledTime" TIMESTAMP(3),
+    "flexibilityMinutes" INTEGER NOT NULL DEFAULT 60,
+    "status" "CarpoolRequestStatus" NOT NULL DEFAULT 'PENDING',
+    "matchedTripId" TEXT,
+    "matchedBookingId" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CarpoolRequest_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
@@ -365,6 +398,12 @@ CREATE INDEX "CarpoolTrip_type_city_departureTime_idx" ON "CarpoolTrip"("type", 
 CREATE INDEX "CarpoolBooking_tripId_idx" ON "CarpoolBooking"("tripId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "CarpoolRequest_matchedBookingId_key" ON "CarpoolRequest"("matchedBookingId");
+
+-- CreateIndex
+CREATE INDEX "CarpoolRequest_type_city_scheduledTime_status_idx" ON "CarpoolRequest"("type", "city", "scheduledTime", "status");
+
+-- CreateIndex
 CREATE INDEX "ClassifiedListing_category_city_status_idx" ON "ClassifiedListing"("category", "city", "status");
 
 -- CreateIndex
@@ -420,6 +459,15 @@ ALTER TABLE "CarpoolBooking" ADD CONSTRAINT "CarpoolBooking_tripId_fkey" FOREIGN
 
 -- AddForeignKey
 ALTER TABLE "CarpoolBooking" ADD CONSTRAINT "CarpoolBooking_passengerId_fkey" FOREIGN KEY ("passengerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CarpoolRequest" ADD CONSTRAINT "CarpoolRequest_passengerId_fkey" FOREIGN KEY ("passengerId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CarpoolRequest" ADD CONSTRAINT "CarpoolRequest_matchedTripId_fkey" FOREIGN KEY ("matchedTripId") REFERENCES "CarpoolTrip"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "CarpoolRequest" ADD CONSTRAINT "CarpoolRequest_matchedBookingId_fkey" FOREIGN KEY ("matchedBookingId") REFERENCES "CarpoolBooking"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "ClassifiedListing" ADD CONSTRAINT "ClassifiedListing_posterId_fkey" FOREIGN KEY ("posterId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CreateTaskDto, TaskCategory, TaskDto } from "@renrenbang/shared-types";
+import { CreateTaskDto, TaskCategory, TaskDto } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { TASK_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";

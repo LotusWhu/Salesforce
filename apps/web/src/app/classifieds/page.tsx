@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ClassifiedCategory, ClassifiedListingDto, PaginatedResult } from "@renrenbang/shared-types";
+import { ClassifiedCategory, ClassifiedListingDto, PaginatedResult } from "@localhub/shared-types";
 import { api, buildQuery } from "@/lib/api";
 import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
 

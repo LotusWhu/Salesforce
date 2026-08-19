@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
-import { CreateTaskDto, TaskCategory, TaskDto } from "@renrenbang/shared-types";
+import { CreateTaskDto, TaskCategory, TaskDto } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { TASK_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
