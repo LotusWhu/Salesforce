@@ -16,7 +16,7 @@ export class UsersController {
   @ApiBearerAuth()
   @Get("me")
   getMe(@CurrentUser() user: User) {
-    return user;
+    return this.users.getById(user.id);
   }
 
   @UseGuards(JwtAuthGuard)

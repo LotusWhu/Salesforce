@@ -8,10 +8,11 @@
   },
   "packageManager": "pnpm@9.0.0",
   "scripts": {
+    "postinstall": "pnpm --filter @renrenbang/shared-types build",
     "dev:api": "pnpm --filter @renrenbang/api dev",
     "dev:web": "pnpm --filter @renrenbang/web dev",
     "dev:mobile": "pnpm --filter @renrenbang/mobile start",
-    "build": "pnpm -r build",
+    "build": "pnpm --filter @renrenbang/shared-types build && pnpm -r --filter '!@renrenbang/shared-types' build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
   }

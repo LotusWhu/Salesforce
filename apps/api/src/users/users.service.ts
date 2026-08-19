@@ -4,6 +4,24 @@ import { GoogleCalendarService } from "../common/services/google-calendar.servic
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { CreateReviewDto } from "./dto/create-review.dto";
 
+// googleRefreshToken 是 Google OAuth 刷新令牌，绝不能出现在任何 API 响应里
+const SAFE_USER_SELECT = {
+  id: true,
+  phone: true,
+  email: true,
+  name: true,
+  avatarUrl: true,
+  role: true,
+  language: true,
+  city: true,
+  phoneVerified: true,
+  ratingAvg: true,
+  ratingCount: true,
+  googleCalendarConnected: true,
+  createdAt: true,
+  updatedAt: true,
+} as const;
+
 @Injectable()
 export class UsersService {
   constructor(
@@ -12,13 +30,13 @@ export class UsersService {
   ) {}
 
   async getById(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({ where: { id }, select: SAFE_USER_SELECT });
     if (!user) throw new NotFoundException("用户不存在");
     return user;
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
-    return this.prisma.user.update({ where: { id: userId }, data: dto });
+    return this.prisma.user.update({ where: { id: userId }, data: dto, select: SAFE_USER_SELECT });
   }
 
   async createReview(reviewerId: string, dto: CreateReviewDto) {
@@ -79,6 +97,7 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id: userId },
       data: { googleRefreshToken: refreshToken, googleCalendarConnected: true },
+      select: SAFE_USER_SELECT,
     });
   }
 
@@ -86,6 +105,7 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id: userId },
       data: { googleRefreshToken: null, googleCalendarConnected: false },
+      select: SAFE_USER_SELECT,
     });
   }
 }
