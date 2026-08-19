@@ -3,6 +3,7 @@ import { BookingStatus, NotificationType, OtpPurpose } from "@renrenbang/shared-
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../common/services/notifications.service";
 import { GoogleCalendarService } from "../common/services/google-calendar.service";
+import { serializeBooking } from "../common/serializers";
 import { AuthService } from "../auth/auth.service";
 import { CreateServiceListingDto } from "./dto/create-service-listing.dto";
 import { SetAvailabilityDto } from "./dto/set-availability.dto";
@@ -159,7 +160,7 @@ export class ServicesService {
     // 下单后立即发送短信验证码，客户需确认验证码后预约才会生效并同步Google日历
     await this.auth.requestOtp(customer.phone, OtpPurpose.BOOKING_CONFIRM);
 
-    return booking;
+    return serializeBooking(booking);
   }
 
   async confirmBookingOtp(bookingId: string, customerId: string, code: string) {
@@ -204,11 +205,11 @@ export class ServicesService {
       { bookingId },
     );
 
-    return updated;
+    return serializeBooking(updated);
   }
 
   async listMyBookings(userId: string, as: "customer" | "provider") {
-    return this.prisma.booking.findMany({
+    const bookings = await this.prisma.booking.findMany({
       where: as === "customer" ? { customerId: userId } : { providerId: userId },
       orderBy: { scheduledStart: "desc" },
       include: {
@@ -217,6 +218,7 @@ export class ServicesService {
         provider: { select: { id: true, name: true, avatarUrl: true } },
       },
     });
+    return bookings.map(serializeBooking);
   }
 
   async cancelBooking(bookingId: string, userId: string) {
@@ -236,7 +238,8 @@ export class ServicesService {
       }
     }
 
-    return this.prisma.booking.update({ where: { id: bookingId }, data: { status: BookingStatus.CANCELLED } });
+    const updated = await this.prisma.booking.update({ where: { id: bookingId }, data: { status: BookingStatus.CANCELLED } });
+    return serializeBooking(updated);
   }
 
   async completeBooking(bookingId: string, providerId: string) {
@@ -246,6 +249,7 @@ export class ServicesService {
     if (booking.status !== BookingStatus.CONFIRMED && booking.status !== BookingStatus.IN_PROGRESS) {
       throw new BadRequestException("该预约状态不允许标记完成");
     }
-    return this.prisma.booking.update({ where: { id: bookingId }, data: { status: BookingStatus.COMPLETED } });
+    const updated = await this.prisma.booking.update({ where: { id: bookingId }, data: { status: BookingStatus.COMPLETED } });
+    return serializeBooking(updated);
   }
 }

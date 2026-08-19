@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { CarpoolBookingStatus, CarpoolTripStatus, NotificationType } from "@renrenbang/shared-types";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../common/services/notifications.service";
+import { serializeCarpoolTrip } from "../common/serializers";
 import { CreateCarpoolTripDto } from "./dto/create-trip.dto";
 import { CreateCarpoolBookingDto } from "./dto/create-carpool-booking.dto";
 import { ListCarpoolTripsQueryDto } from "./dto/list-trips-query.dto";
@@ -14,7 +15,7 @@ export class CarpoolService {
   ) {}
 
   async createTrip(driverId: string, dto: CreateCarpoolTripDto) {
-    return this.prisma.carpoolTrip.create({
+    const trip = await this.prisma.carpoolTrip.create({
       data: {
         driverId,
         type: dto.type,
@@ -34,6 +35,7 @@ export class CarpoolService {
         notes: dto.notes,
       },
     });
+    return serializeCarpoolTrip(trip);
   }
 
   async listTrips(query: ListCarpoolTripsQueryDto) {
@@ -62,7 +64,7 @@ export class CarpoolService {
       }),
       this.prisma.carpoolTrip.count({ where }),
     ]);
-    return { items, total, page, pageSize };
+    return { items: items.map(serializeCarpoolTrip), total, page, pageSize };
   }
 
   async getById(id: string) {
@@ -74,14 +76,15 @@ export class CarpoolService {
       },
     });
     if (!trip) throw new NotFoundException("行程不存在");
-    return trip;
+    return serializeCarpoolTrip(trip);
   }
 
   async cancelTrip(id: string, driverId: string) {
     const trip = await this.prisma.carpoolTrip.findUnique({ where: { id } });
     if (!trip) throw new NotFoundException("行程不存在");
     if (trip.driverId !== driverId) throw new ForbiddenException("无权操作此行程");
-    return this.prisma.carpoolTrip.update({ where: { id }, data: { status: CarpoolTripStatus.CANCELLED } });
+    const updated = await this.prisma.carpoolTrip.update({ where: { id }, data: { status: CarpoolTripStatus.CANCELLED } });
+    return serializeCarpoolTrip(updated);
   }
 
   async createBooking(tripId: string, passengerId: string, dto: CreateCarpoolBookingDto) {
@@ -156,10 +159,11 @@ export class CarpoolService {
   }
 
   async listMyBookings(passengerId: string) {
-    return this.prisma.carpoolBooking.findMany({
+    const bookings = await this.prisma.carpoolBooking.findMany({
       where: { passengerId },
       orderBy: { createdAt: "desc" },
       include: { trip: { include: { driver: { select: { id: true, name: true, avatarUrl: true } } } } },
     });
+    return bookings.map((b) => ({ ...b, trip: serializeCarpoolTrip(b.trip) }));
   }
 }

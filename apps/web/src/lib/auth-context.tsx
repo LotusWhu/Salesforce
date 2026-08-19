@@ -1,7 +1,7 @@
 "use client";
 
 import { UserProfile } from "@renrenbang/shared-types";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, PropsWithChildren, useContext, useEffect, useState } from "react";
 import { api, getToken, setToken } from "./api";
 
 interface AuthContextValue {
@@ -14,7 +14,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
+export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 

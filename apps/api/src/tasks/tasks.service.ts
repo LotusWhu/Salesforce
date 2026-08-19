@@ -2,6 +2,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { NotificationType, TaskOfferStatus, TaskStatus } from "@renrenbang/shared-types";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../common/services/notifications.service";
+import { serializeTask } from "../common/serializers";
 import { CreateTaskDto } from "./dto/create-task.dto";
 import { UpdateTaskDto } from "./dto/update-task.dto";
 import { CreateTaskOfferDto } from "./dto/create-task-offer.dto";
@@ -16,7 +17,7 @@ export class TasksService {
   ) {}
 
   async create(posterId: string, dto: CreateTaskDto) {
-    return this.prisma.task.create({
+    const task = await this.prisma.task.create({
       data: {
         posterId,
         category: dto.category,
@@ -33,6 +34,7 @@ export class TasksService {
         attachmentUrls: dto.attachmentUrls ?? [],
       },
     });
+    return serializeTask(task);
   }
 
   async list(query: ListTasksQueryDto) {
@@ -64,7 +66,7 @@ export class TasksService {
       this.prisma.task.count({ where }),
     ]);
 
-    return { items, total, page, pageSize };
+    return { items: items.map(serializeTask), total, page, pageSize };
   }
 
   async getById(id: string) {
@@ -77,7 +79,7 @@ export class TasksService {
       },
     });
     if (!task) throw new NotFoundException("任务不存在");
-    return task;
+    return serializeTask(task);
   }
 
   private async getOwnedTask(id: string, posterId: string) {
@@ -89,13 +91,14 @@ export class TasksService {
 
   async update(id: string, posterId: string, dto: UpdateTaskDto) {
     await this.getOwnedTask(id, posterId);
-    return this.prisma.task.update({
+    const task = await this.prisma.task.update({
       where: { id },
       data: {
         ...dto,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
       },
     });
+    return serializeTask(task);
   }
 
   async cancel(id: string, posterId: string) {
@@ -103,7 +106,8 @@ export class TasksService {
     if (task.status === TaskStatus.COMPLETED) {
       throw new BadRequestException("任务已完成，无法取消");
     }
-    return this.prisma.task.update({ where: { id }, data: { status: TaskStatus.CANCELLED } });
+    const updated = await this.prisma.task.update({ where: { id }, data: { status: TaskStatus.CANCELLED } });
+    return serializeTask(updated);
   }
 
   async createOffer(taskId: string, taskerId: string, dto: CreateTaskOfferDto) {
@@ -159,7 +163,7 @@ export class TasksService {
       { taskId },
     );
 
-    return updatedTask;
+    return serializeTask(updatedTask);
   }
 
   async startProgress(id: string, taskerId: string) {
@@ -167,7 +171,8 @@ export class TasksService {
     if (!task) throw new NotFoundException("任务不存在");
     if (task.assignedTaskerId !== taskerId) throw new ForbiddenException("你未被分配此任务");
     if (task.status !== TaskStatus.ASSIGNED) throw new BadRequestException("任务状态不允许开始执行");
-    return this.prisma.task.update({ where: { id }, data: { status: TaskStatus.IN_PROGRESS } });
+    const updated = await this.prisma.task.update({ where: { id }, data: { status: TaskStatus.IN_PROGRESS } });
+    return serializeTask(updated);
   }
 
   async submitCompletion(id: string, taskerId: string, dto: SubmitTaskCompletionDto) {
@@ -191,7 +196,7 @@ export class TasksService {
       { taskId: id },
     );
 
-    return updated;
+    return serializeTask(updated);
   }
 
   async confirmCompletion(id: string, posterId: string) {
@@ -211,6 +216,6 @@ export class TasksService {
       );
     }
 
-    return updated;
+    return serializeTask(updated);
   }
 }

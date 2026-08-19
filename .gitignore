@@ -37,3 +37,4 @@ apps/api/generated/
 # misc
 *.tsbuildinfo
 coverage/
+node-compile-cache/

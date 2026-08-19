@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { GeoPoint } from "@renrenbang/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { CARPOOL_TYPE_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
@@ -10,8 +11,8 @@ interface TripDetail {
   id: string;
   driverId: string;
   type: keyof typeof CARPOOL_TYPE_LABELS;
-  originAddress: string;
-  destinationAddress: string;
+  origin: GeoPoint;
+  destination: GeoPoint;
   departureTime: string;
   flightNumber: string | null;
   totalSeats: number;
@@ -72,7 +73,7 @@ export default function CarpoolTripDetailScreen() {
       <Card>
         <Badge label={CARPOOL_TYPE_LABELS[trip.type]} />
         <Text style={styles.title}>
-          {trip.originAddress} → {trip.destinationAddress}
+          {trip.origin.address} → {trip.destination.address}
         </Text>
         <Text style={styles.meta}>出发时间: {new Date(trip.departureTime).toLocaleString()}</Text>
         {trip.flightNumber && <Text style={styles.meta}>航班号: {trip.flightNumber}</Text>}

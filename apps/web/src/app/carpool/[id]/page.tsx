@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { GeoPoint } from "@renrenbang/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { CARPOOL_TYPE_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
@@ -10,8 +11,8 @@ interface TripDetail {
   id: string;
   driverId: string;
   type: keyof typeof CARPOOL_TYPE_LABELS;
-  originAddress: string;
-  destinationAddress: string;
+  origin: GeoPoint;
+  destination: GeoPoint;
   departureTime: string;
   flightNumber: string | null;
   totalSeats: number;
@@ -67,7 +68,7 @@ export default function CarpoolTripDetailPage() {
           {CARPOOL_TYPE_LABELS[trip.type]}
         </span>
         <h1 className="mt-2 text-xl font-bold">
-          {trip.originAddress} → {trip.destinationAddress}
+          {trip.origin.address} → {trip.destination.address}
         </h1>
         <div className="mt-2 space-y-1 text-sm text-neutral-600">
           <p>出发时间: {new Date(trip.departureTime).toLocaleString()}</p>
