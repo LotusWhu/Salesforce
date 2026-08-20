@@ -108,7 +108,7 @@ export class ChatService {
       }),
     ]);
 
-    await this.notifyOthers(conversation.id, senderId, owners, contextType, text);
+    await this.notifyOthers(conversation.id, senderId, owners, contextType, contextId, text);
 
     return message;
   }
@@ -118,6 +118,7 @@ export class ChatService {
     senderId: string,
     owners: string[],
     contextType: ConversationContextType,
+    contextId: string,
     text: string,
   ) {
     const priorParticipants = await this.prisma.conversationParticipant.findMany({
@@ -135,7 +136,7 @@ export class ChatService {
           NotificationType.NEW_MESSAGE,
           "收到新留言",
           preview.length > 60 ? `${preview.slice(0, 60)}...` : preview,
-          { conversationId, contextType },
+          { conversationId, contextType, contextId },
         ),
       ),
     );

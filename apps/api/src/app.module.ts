@@ -12,6 +12,7 @@ import { PaymentsModule } from "./payments/payments.module";
 import { UploadsModule } from "./uploads/uploads.module";
 import { GeocodeModule } from "./geocode/geocode.module";
 import { ChatModule } from "./chat/chat.module";
+import { NotificationsModule } from "./notifications/notifications.module";
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ChatModule } from "./chat/chat.module";
     UploadsModule,
     GeocodeModule,
     ChatModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

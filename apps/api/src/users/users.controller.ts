@@ -8,6 +8,7 @@ import { CurrentUser } from "../auth/current-user.decorator";
 import { UsersService } from "./users.service";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { CreateReviewDto } from "./dto/create-review.dto";
+import { RegisterPushTokenDto } from "./dto/register-push-token.dto";
 
 @ApiTags("users")
 @Controller()
@@ -114,5 +115,21 @@ export class UsersController {
   @Post("me/stripe-connect/refresh-status")
   refreshStripeConnectStatus(@CurrentUser() user: User) {
     return this.users.refreshStripeConnectStatus(user.id);
+  }
+
+  // ---------------- 推送通知 Token 注册 (Expo Push) ----------------
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post("me/push-token")
+  registerPushToken(@CurrentUser() user: User, @Body() dto: RegisterPushTokenDto) {
+    return this.users.registerPushToken(user.id, dto.token);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Delete("me/push-token")
+  unregisterPushToken(@CurrentUser() user: User) {
+    return this.users.unregisterPushToken(user.id);
   }
 }

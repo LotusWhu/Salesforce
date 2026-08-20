@@ -142,4 +142,14 @@ export class UsersService {
     await this.prisma.user.update({ where: { id: userId }, data: { stripeConnectOnboarded: onboarded } });
     return { stripeConnectOnboarded: onboarded };
   }
+
+  async registerPushToken(userId: string, token: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { expoPushToken: token } });
+    return { success: true };
+  }
+
+  async unregisterPushToken(userId: string) {
+    await this.prisma.user.update({ where: { id: userId }, data: { expoPushToken: null } });
+    return { success: true };
+  }
 }

@@ -1,6 +1,7 @@
 import { UserProfile } from "@localhub/shared-types";
 import { createContext, useContext, useEffect, useState } from "react";
 import { api, getToken, setToken } from "./api";
+import { registerForPushNotificationsAsync } from "./push-notifications";
 
 interface AuthContextValue {
   user: UserProfile | null;
@@ -26,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const me = await api.get<UserProfile>("/me");
       setUser(me);
+      registerForPushNotificationsAsync();
     } catch {
       await setToken(null);
       setUser(null);
@@ -45,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = () => {
+    api.delete("/me/push-token").catch(() => {}); // best-effort, 用清空前的 token 发出
     setToken(null);
     setUser(null);
   };

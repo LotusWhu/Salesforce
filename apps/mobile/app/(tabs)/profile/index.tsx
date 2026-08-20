@@ -11,7 +11,17 @@ export default function ProfileTab() {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
   const awaitingReturn = useRef(false);
+
+  useEffect(() => {
+    if (user) {
+      api
+        .get<{ unreadCount: number }>("/notifications")
+        .then((r) => setUnreadCount(r.unreadCount))
+        .catch(() => {});
+    }
+  }, [user]);
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (state) => {
@@ -127,6 +137,13 @@ export default function ProfileTab() {
         <Text style={styles.subtitle}>查看客户预约你服务的时间安排，按日期分组展示，可确认完成或取消。</Text>
         <View style={{ height: 8 }} />
         <SecondaryButton title="查看日程" onPress={() => router.push("/profile/schedule")} />
+      </Card>
+
+      <Card>
+        <Text style={styles.cardTitle}>通知{unreadCount > 0 ? ` (${unreadCount})` : ""}</Text>
+        <Text style={styles.subtitle}>任务/预约/拼车相关的通知，已授权推送时也会同步收到手机通知</Text>
+        <View style={{ height: 8 }} />
+        <SecondaryButton title="查看通知" onPress={() => router.push("/profile/notifications")} />
       </Card>
 
       <Card>

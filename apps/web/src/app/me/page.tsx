@@ -41,6 +41,16 @@ export default function MePage() {
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      api
+        .get<{ unreadCount: number }>("/notifications")
+        .then((r) => setUnreadCount(r.unreadCount))
+        .catch(() => {});
+    }
+  }, [user]);
 
   if (loading) return <p className="text-neutral-500">加载中...</p>;
 
@@ -176,6 +186,25 @@ export default function MePage() {
           </div>
           <Link href="/me/schedule" className="btn-secondary text-sm">
             查看日程
+          </Link>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold">
+              通知
+              {unreadCount > 0 && (
+                <span className="ml-2 rounded-full bg-red-500 px-2 py-0.5 text-xs font-medium text-white">
+                  {unreadCount}
+                </span>
+              )}
+            </h2>
+            <p className="mt-1 text-sm text-neutral-500">任务/预约/拼车相关的通知，已注册推送时也会同步收到手机通知</p>
+          </div>
+          <Link href="/me/notifications" className="btn-secondary text-sm">
+            查看通知
           </Link>
         </div>
       </div>

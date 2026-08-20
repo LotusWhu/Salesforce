@@ -158,10 +158,20 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 
 ⚠️ 目前还没有收银台前端——客户"付款"这件事本身（真实输入卡号完成 Stripe PaymentIntent）还没有 UI，`holdForContext` 只是把 `client_secret` 准备好等前端来接。所以"HELD"是我们自己数据库里的担保记账状态，不代表已经从客户卡里划走真实的钱；这个仓库的开发沙箱也没有配置真实的 `STRIPE_SECRET_KEY`。已经用真实多用户场景验证了完整的记账状态机本身（HELD→RELEASED 的服务费计算、HELD→REFUNDED）在这两种情况下都完全正确。
 
+## 推送通知
+
+`Notification` 表和站内通知（任务报价/分配/完成、预约确认、拼车成交、新留言等各业务节点都会创建）本来就已经就位；这一部分接的是**推送到手机**这一层，站内通知列表本身不受影响：
+
+- 后端 `apps/api/src/common/services/expo-push.service.ts`：不引入 Expo 官方 SDK，直接 `fetch` 调 Expo 的公开推送接口 `https://exp.host/--/api/v2/push/send`（和地理编码模块一样，保持"少依赖"的原则）。`NotificationsService.create()`（所有业务模块创建通知的唯一入口）在写入 `Notification` 行之后，如果该用户注册过 `expoPushToken` 就顺带发一条推送；推送请求失败（网络/无效 token）只记日志，不会影响站内通知本身的创建，也不会让触发通知的业务请求失败。
+- `POST /me/push-token` / `DELETE /me/push-token`：注册/清除当前用户的 Expo Push Token。
+- `GET /notifications`（分页 + `unreadCount`）、`POST /notifications/:id/read`、`POST /notifications/read-all`：站内通知列表接口，web `/me/notifications`、mobile `profile/notifications.tsx`，点击通知会按 `data` 里的 `taskId`/`tripId`/`contextType`+`contextId` 跳转到对应任务/拼车/分类信息详情页，预约类通知跳转到"我的预约日程"页。
+- App 端 `apps/mobile/src/lib/push-notifications.ts`：登录成功后自动请求通知权限、拿 `expo-notifications` 的 Expo Push Token 并注册到后端；只在真机上生效（模拟器/Web 拿不到推送 token），失败静默忽略不影响其他功能；退出登录时会清除后端记录的 token。
+
+⚠️ 这个仓库的开发沙箱网络策略屏蔽了 `exp.host`（Expo 推送服务器），所以沙箱里实际发出的推送请求会收到网络层拒绝——已经用真实多用户场景验证了"注册 token → 触发业务通知（如任务收到报价）→ `NotificationsService` 尝试推送并优雅失败但站内通知照常创建 → `/notifications` 正确返回未读数和内容 → 标记已读/全部已读 → 网页端点击通知正确跳转到对应任务详情页"这一整条链路，唯独真实的手机推送到达（Expo → APNs/FCM → 设备）这一段因沙箱网络限制无法在这里验证，用户自己的电脑/正式部署环境不受影响。
+
 ## 当前进度与后续规划
 
-已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、担保交易(托管/释放/退款) + Stripe Connect 分账、List/Map 视图切换、图片上传、地址正向地理编码、站内公开留言(含语音)。后续可继续完善：
+已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、担保交易(托管/释放/退款) + Stripe Connect 分账、List/Map 视图切换、图片上传、地址正向地理编码、站内公开留言(含语音)、推送通知(Expo Push + 站内通知中心)。后续可继续完善：
 
 - 收银台前端 (Stripe Elements 卡片输入 UI)：担保交易的托管/释放/退款逻辑已经完整跑通并接了真实的 Stripe PaymentIntent/Transfer/Refund API，但目前还没有客户实际输入卡号完成扣款的收银台页面——`PaymentsService.holdForContext` 已经把 `client_secret` 准备好了，接一个 Stripe Elements 组件就能用
-- 推送通知（`Notification` 表已就位，可接 Expo Push / FCM / APNs；`chat` 模块已经在发消息时创建 `NEW_MESSAGE` 通知，接上推送后可以直接用）
 - 多城市/多语言（en/zh）切换的完整落地

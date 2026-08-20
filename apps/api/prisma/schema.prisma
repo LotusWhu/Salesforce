@@ -46,6 +46,8 @@ model User {
   // Stripe Connect (用于担保交易完成后把款项打给跑腿者/服务提供者/车主个体户)
   stripeConnectedAccountId String?
   stripeConnectOnboarded   Boolean  @default(false)
+  // Expo Push Token (App 端注册，用于推送新报价/预约确认/消息/支付到账等通知)
+  expoPushToken            String?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
