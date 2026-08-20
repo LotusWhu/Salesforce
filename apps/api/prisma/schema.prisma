@@ -43,6 +43,9 @@ model User {
   googleRefreshToken      String?
   googleCalendarId        String?
   googleCalendarConnected Boolean  @default(false)
+  // Stripe Connect (用于担保交易完成后把款项打给跑腿者/服务提供者/车主个体户)
+  stripeConnectedAccountId String?
+  stripeConnectOnboarded   Boolean  @default(false)
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
 
@@ -551,6 +554,10 @@ model Payment {
   currency              String             @default("AUD")
   status                PaymentStatus      @default(PENDING)
   stripePaymentIntentId String?
+  // 释放(RELEASED)给收款人时的分账明细: 平台服务费 + 实际到账净额 + Stripe Connect 转账 ID
+  platformFeeAmount     Decimal?           @db.Decimal(10, 2)
+  netAmount             Decimal?           @db.Decimal(10, 2)
+  stripeTransferId      String?
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
 }

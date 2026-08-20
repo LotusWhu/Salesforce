@@ -94,4 +94,25 @@ export class UsersController {
   disconnectGoogleCalendar(@CurrentUser() user: User) {
     return this.users.disconnectGoogleCalendar(user.id);
   }
+
+  // ---------------- Stripe Connect 入驻 (个体户跑腿者/服务提供者/车主接收担保交易分账) ----------------
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get("me/stripe-connect/onboarding-link")
+  getStripeConnectOnboardingLink(@CurrentUser() user: User) {
+    const webAppUrl = this.config.get<string>("WEB_APP_URL") ?? "http://localhost:3000";
+    return this.users.getStripeConnectOnboardingLink(user.id, `${webAppUrl}/me`, `${webAppUrl}/me?stripeConnect=done`);
+  }
+
+  /**
+   * Stripe 入驻是异步的，没有接 webhook，前端从 Stripe 页面跳回来后
+   * 调这个接口主动去 Stripe 查一下入驻账号的真实状态再更新本地记录。
+   */
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Post("me/stripe-connect/refresh-status")
+  refreshStripeConnectStatus(@CurrentUser() user: User) {
+    return this.users.refreshStripeConnectStatus(user.id);
+  }
 }

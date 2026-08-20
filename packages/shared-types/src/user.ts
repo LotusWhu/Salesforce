@@ -13,6 +13,7 @@ export interface UserProfile {
   ratingAvg: number; // 0-5
   ratingCount: number;
   googleCalendarConnected: boolean;
+  stripeConnectOnboarded: boolean;
   createdAt: string;
 }
 

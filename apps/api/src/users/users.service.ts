@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { GoogleCalendarService } from "../common/services/google-calendar.service";
+import { StripeService } from "../common/services/stripe.service";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { CreateReviewDto } from "./dto/create-review.dto";
 
@@ -18,6 +19,7 @@ const SAFE_USER_SELECT = {
   ratingAvg: true,
   ratingCount: true,
   googleCalendarConnected: true,
+  stripeConnectOnboarded: true,
   createdAt: true,
   updatedAt: true,
 } as const;
@@ -27,6 +29,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly googleCalendar: GoogleCalendarService,
+    private readonly stripe: StripeService,
   ) {}
 
   async getById(id: string) {
@@ -107,5 +110,36 @@ export class UsersService {
       data: { googleRefreshToken: null, googleCalendarConnected: false },
       select: SAFE_USER_SELECT,
     });
+  }
+
+  /** 生成 Stripe Connect Express 入驻链接; 首次调用时顺带创建 Connect 账号 */
+  async getStripeConnectOnboardingLink(userId: string, refreshUrl: string, returnUrl: string) {
+    if (!this.stripe.isConfigured) {
+      throw new BadRequestException("Stripe 未配置，暂时无法入驻收款账号");
+    }
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException("用户不存在");
+
+    let accountId = user.stripeConnectedAccountId;
+    if (!accountId) {
+      const account = await this.stripe.createConnectedAccount(user.email ?? `${user.phone}@localhub.example`);
+      accountId = account.id;
+      await this.prisma.user.update({ where: { id: userId }, data: { stripeConnectedAccountId: accountId } });
+    }
+
+    const url = await this.stripe.createAccountOnboardingLink(accountId, refreshUrl, returnUrl);
+    return { url };
+  }
+
+  async refreshStripeConnectStatus(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException("用户不存在");
+    if (!user.stripeConnectedAccountId) {
+      return { stripeConnectOnboarded: false };
+    }
+    const status = await this.stripe.getConnectedAccountStatus(user.stripeConnectedAccountId);
+    const onboarded = status.chargesEnabled && status.payoutsEnabled;
+    await this.prisma.user.update({ where: { id: userId }, data: { stripeConnectOnboarded: onboarded } });
+    return { stripeConnectOnboarded: onboarded };
   }
 }

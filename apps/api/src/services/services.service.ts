@@ -1,10 +1,11 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { BookingStatus, NotificationType, OtpPurpose } from "@localhub/shared-types";
+import { BookingStatus, NotificationType, OtpPurpose, PaymentRelatedType } from "@localhub/shared-types";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../common/services/notifications.service";
 import { GoogleCalendarService } from "../common/services/google-calendar.service";
 import { serializeBooking, serializeServiceListing } from "../common/serializers";
 import { AuthService } from "../auth/auth.service";
+import { PaymentsService } from "../payments/payments.service";
 import { CreateServiceListingDto } from "./dto/create-service-listing.dto";
 import { SetAvailabilityDto } from "./dto/set-availability.dto";
 import { ListServicesQueryDto } from "./dto/list-services-query.dto";
@@ -19,6 +20,7 @@ export class ServicesService {
     private readonly notifications: NotificationsService,
     private readonly googleCalendar: GoogleCalendarService,
     private readonly auth: AuthService,
+    private readonly payments: PaymentsService,
   ) {}
 
   // ---------------- 服务发布 (保洁/美甲/钢琴教学等) ----------------
@@ -275,6 +277,18 @@ export class ServicesService {
       { bookingId },
     );
 
+    // 验证码确认后把预约金额放入担保账户 (HELD)，服务提供者标记完成后再释放
+    const hours = (booking.scheduledEnd.getTime() - booking.scheduledStart.getTime()) / (60 * 60 * 1000);
+    const amount = booking.service.priceType === "HOURLY" ? Number(booking.service.price) * hours : Number(booking.service.price);
+    await this.payments.holdForContext({
+      relatedType: PaymentRelatedType.BOOKING,
+      relatedId: bookingId,
+      payerId: booking.customerId,
+      payeeId: booking.providerId,
+      amount,
+      currency: booking.service.currency,
+    });
+
     return serializeBooking(updated);
   }
 
@@ -309,6 +323,7 @@ export class ServicesService {
     }
 
     const updated = await this.prisma.booking.update({ where: { id: bookingId }, data: { status: BookingStatus.CANCELLED } });
+    await this.payments.refundForContext(PaymentRelatedType.BOOKING, bookingId);
     return serializeBooking(updated);
   }
 
@@ -320,6 +335,8 @@ export class ServicesService {
       throw new BadRequestException("该预约状态不允许标记完成");
     }
     const updated = await this.prisma.booking.update({ where: { id: bookingId }, data: { status: BookingStatus.COMPLETED } });
+    // 服务提供者标记完成后，从担保账户按平台服务费比例扣费，净额转给服务提供者
+    await this.payments.releaseForContext(PaymentRelatedType.BOOKING, bookingId);
     return serializeBooking(updated);
   }
 }

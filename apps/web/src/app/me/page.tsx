@@ -25,6 +25,17 @@ function GoogleCalendarCallbackNotice({
   return null;
 }
 
+function StripeConnectCallbackNotice({ onReturn }: { onReturn: () => void }) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("stripeConnect") === "done") onReturn();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  return null;
+}
+
 export default function MePage() {
   const { user, loading, refresh } = useAuth();
   const [connecting, setConnecting] = useState(false);
@@ -71,6 +82,32 @@ export default function MePage() {
     }
   };
 
+  const connectStripe = async () => {
+    setError(null);
+    setConnecting(true);
+    try {
+      const { url } = await api.get<{ url: string }>("/me/stripe-connect/onboarding-link");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "获取入驻链接失败");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const refreshStripeStatus = async () => {
+    setError(null);
+    setConnecting(true);
+    try {
+      await api.post("/me/stripe-connect/refresh-status");
+      await refresh();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "刷新入驻状态失败");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <Suspense fallback={null}>
@@ -80,6 +117,12 @@ export default function MePage() {
             refresh();
           }}
           onError={() => setError("Google 日历连接失败，请重试。")}
+        />
+        <StripeConnectCallbackNotice
+          onReturn={() => {
+            setMessage("已从 Stripe 入驻页面返回，正在刷新收款账号状态...");
+            refreshStripeStatus();
+          }}
         />
       </Suspense>
 
@@ -145,6 +188,40 @@ export default function MePage() {
           </div>
           <Link href="/me/messages" className="btn-secondary text-sm">
             查看消息
+          </Link>
+        </div>
+      </div>
+
+      <div className="card">
+        <h2 className="font-semibold">收款账号 (Stripe Connect)</h2>
+        <p className="mt-1 text-sm text-neutral-500">
+          跑腿任务/预约/拼车的费用会先进入平台担保账户，服务确认完成后自动扣除平台服务费，净额通过 Stripe
+          转给你——个体户(跑腿者/服务提供者/车主)需要先完成这个收款账号入驻才能收到分账。
+        </p>
+        <p className="mt-2 text-sm">
+          状态:{" "}
+          <span className={user.stripeConnectOnboarded ? "font-medium text-green-600" : "text-neutral-500"}>
+            {user.stripeConnectOnboarded ? "已入驻，可接收分账" : "未入驻"}
+          </span>
+        </p>
+        <div className="mt-3 flex gap-2">
+          <button className="btn-primary text-sm" disabled={connecting} onClick={connectStripe}>
+            {connecting ? "处理中..." : user.stripeConnectOnboarded ? "重新设置收款账号" : "设置收款账号"}
+          </button>
+          <button className="btn-secondary text-sm" disabled={connecting} onClick={refreshStripeStatus}>
+            刷新状态
+          </button>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold">我的交易</h2>
+            <p className="mt-1 text-sm text-neutral-500">担保交易(托管/释放/退款)记录</p>
+          </div>
+          <Link href="/me/payments" className="btn-secondary text-sm">
+            查看交易
           </Link>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { NotificationType, TaskOfferStatus, TaskStatus } from "@localhub/shared-types";
+import { NotificationType, PaymentRelatedType, TaskOfferStatus, TaskStatus } from "@localhub/shared-types";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../common/services/notifications.service";
+import { PaymentsService } from "../payments/payments.service";
 import { serializeTask } from "../common/serializers";
 import { CreateTaskDto } from "./dto/create-task.dto";
 import { UpdateTaskDto } from "./dto/update-task.dto";
@@ -14,6 +15,7 @@ export class TasksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly payments: PaymentsService,
   ) {}
 
   async create(posterId: string, dto: CreateTaskDto) {
@@ -109,6 +111,7 @@ export class TasksService {
       throw new BadRequestException("任务已完成，无法取消");
     }
     const updated = await this.prisma.task.update({ where: { id }, data: { status: TaskStatus.CANCELLED } });
+    await this.payments.refundForContext(PaymentRelatedType.TASK, id);
     return serializeTask(updated);
   }
 
@@ -165,6 +168,16 @@ export class TasksService {
       { taskId },
     );
 
+    // 接单即把报价金额放入担保账户 (HELD)，任务确认完成后再释放给跑腿者
+    await this.payments.holdForContext({
+      relatedType: PaymentRelatedType.TASK,
+      relatedId: taskId,
+      payerId: task.posterId,
+      payeeId: offer.taskerId,
+      amount: Number(offer.price),
+      currency: task.currency,
+    });
+
     return serializeTask(updatedTask);
   }
 
@@ -217,6 +230,9 @@ export class TasksService {
         { taskId: id },
       );
     }
+
+    // 发布者确认完成后，从担保账户按平台服务费比例扣费，净额转给跑腿者
+    await this.payments.releaseForContext(PaymentRelatedType.TASK, id);
 
     return serializeTask(updated);
   }

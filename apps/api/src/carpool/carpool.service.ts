@@ -4,10 +4,12 @@ import {
   CarpoolRequestStatus,
   CarpoolTripStatus,
   NotificationType,
+  PaymentRelatedType,
 } from "@localhub/shared-types";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../common/services/notifications.service";
+import { PaymentsService } from "../payments/payments.service";
 import { serializeCarpoolTrip } from "../common/serializers";
 import { CreateCarpoolTripDto } from "./dto/create-trip.dto";
 import { CreateCarpoolBookingDto } from "./dto/create-carpool-booking.dto";
@@ -34,6 +36,7 @@ export class CarpoolService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly payments: PaymentsService,
   ) {}
 
   async createTrip(driverId: string, dto: CreateCarpoolTripDto) {
@@ -156,6 +159,16 @@ export class CarpoolService {
       { tripId },
     );
 
+    // 下单即把车费放入担保账户 (HELD)，行程结束车主标记完成后再释放
+    await this.payments.holdForContext({
+      relatedType: PaymentRelatedType.CARPOOL_BOOKING,
+      relatedId: booking.created.id,
+      payerId: passengerId,
+      payeeId: booking.trip.driverId,
+      amount: Number(booking.created.totalPrice),
+      currency: booking.trip.currency,
+    });
+
     return booking.created;
   }
 
@@ -190,7 +203,25 @@ export class CarpoolService {
       return updated;
     });
 
+    await this.payments.refundForContext(PaymentRelatedType.CARPOOL_BOOKING, bookingId);
+
     return booking;
+  }
+
+  /** 车主在行程结束后把某个乘客的预订标记完成，从担保账户按平台服务费比例扣费并把净额转给车主 */
+  async completeBooking(bookingId: string, driverId: string) {
+    const booking = await this.prisma.carpoolBooking.findUnique({ where: { id: bookingId }, include: { trip: true } });
+    if (!booking) throw new NotFoundException("预订不存在");
+    if (booking.trip.driverId !== driverId) throw new ForbiddenException("无权操作此预订");
+    if (booking.status !== CarpoolBookingStatus.PENDING && booking.status !== CarpoolBookingStatus.CONFIRMED) {
+      throw new BadRequestException("该预订状态不允许标记完成");
+    }
+    const updated = await this.prisma.carpoolBooking.update({
+      where: { id: bookingId },
+      data: { status: CarpoolBookingStatus.COMPLETED },
+    });
+    await this.payments.releaseForContext(PaymentRelatedType.CARPOOL_BOOKING, bookingId);
+    return updated;
   }
 
   async listMyBookings(passengerId: string) {

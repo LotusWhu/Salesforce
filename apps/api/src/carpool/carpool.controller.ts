@@ -54,6 +54,13 @@ export class CarpoolController {
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @Post("bookings/:id/complete")
+  completeBooking(@CurrentUser() user: User, @Param("id") id: string) {
+    return this.carpool.completeBooking(id, user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @Get("bookings/mine")
   listMyBookings(@CurrentUser() user: User) {
     return this.carpool.listMyBookings(user.id);

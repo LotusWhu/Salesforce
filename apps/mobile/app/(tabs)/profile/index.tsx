@@ -17,7 +17,12 @@ export default function ProfileTab() {
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "active" && awaitingReturn.current) {
         awaitingReturn.current = false;
-        refresh();
+        // 从 Google 日历授权页/Stripe 入驻页返回时都会触发这里；
+        // Stripe 状态需要主动查询 (没有接 webhook)，Google Calendar 状态在回调时已经更新，多查一次是无害的空操作
+        api
+          .post("/me/stripe-connect/refresh-status")
+          .catch(() => undefined)
+          .finally(() => refresh());
       }
     });
     return () => sub.remove();
@@ -73,6 +78,20 @@ export default function ProfileTab() {
     }
   };
 
+  const connectStripe = async () => {
+    setError(null);
+    setConnecting(true);
+    try {
+      const { url } = await api.get<{ url: string }>("/me/stripe-connect/onboarding-link");
+      awaitingReturn.current = true;
+      await Linking.openURL(url);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "获取入驻链接失败");
+    } finally {
+      setConnecting(false);
+    }
+  };
+
   return (
     <View style={[styles.screen, { padding: 16, gap: 12 }]}>
       <Card>
@@ -115,6 +134,29 @@ export default function ProfileTab() {
         <Text style={styles.subtitle}>跑腿任务/预约/拼车/分类信息下的公开留言</Text>
         <View style={{ height: 8 }} />
         <SecondaryButton title="查看消息" onPress={() => router.push("/profile/messages")} />
+      </Card>
+
+      <Card>
+        <Text style={styles.cardTitle}>收款账号 (Stripe Connect)</Text>
+        <Text style={styles.subtitle}>
+          跑腿任务/预约/拼车的费用会先进入平台担保账户，服务确认完成后自动扣除平台服务费，净额转给你——需要先完成这个收款账号入驻才能收到分账。
+        </Text>
+        <Text style={[styles.subtitle, { marginTop: 8 }]}>
+          状态: {user.stripeConnectOnboarded ? "已入驻，可接收分账" : "未入驻"}
+        </Text>
+        <View style={{ height: 8 }} />
+        <PrimaryButton
+          title={connecting ? "处理中..." : user.stripeConnectOnboarded ? "重新设置收款账号" : "设置收款账号"}
+          onPress={connectStripe}
+          disabled={connecting}
+        />
+      </Card>
+
+      <Card>
+        <Text style={styles.cardTitle}>我的交易</Text>
+        <Text style={styles.subtitle}>担保交易(托管/释放/退款)记录</Text>
+        <View style={{ height: 8 }} />
+        <SecondaryButton title="查看交易" onPress={() => router.push("/profile/payments")} />
       </Card>
     </View>
   );

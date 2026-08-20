@@ -89,6 +89,7 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_OAUTH_REDIRECT_URL` | Google Calendar 授权，用于预约同步日程；`GOOGLE_OAUTH_REDIRECT_URL` 需配置成 API 的 `/me/google-calendar/callback` |
 | `WEB_APP_URL` | 网页版地址，Google 授权完成后由 API 跳转回网页版 `/me` |
 | `STRIPE_SECRET_KEY` | 支付 / 服务费 / 担保交易 |
+| `PLATFORM_FEE_PERCENT` | 担保交易释放给收款人时的平台服务费比例 (%)，默认 10 |
 | `NEXT_PUBLIC_API_URL` (web) / `EXPO_PUBLIC_API_URL` (mobile) | 前端指向后端 API 的地址 |
 
 ## 目录速览
@@ -145,10 +146,22 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 
 已用真实多用户场景端到端验证：未登录可读不可发、正常留言可见、电话号码留言被拒绝且不出现在留言流里、纯语音留言（无文字）可发送并渲染播放器、空消息被拒绝、给不存在的任务发消息返回404，以及 Playwright 驱动网页端在任务/拼车/分类信息三个详情页实际发送并看到留言。
 
+## 支付担保交易 (Escrow) + Stripe Connect 分账
+
+跑腿任务/上门服务预约/拼车，三个模块的钱都走同一套担保交易生命周期（`apps/api/src/payments/payments.service.ts`），状态机是 `PENDING → HELD → RELEASED` 或 `HELD → REFUNDED`：
+
+- **托管 (HELD)**：接单/预约确认/拼车下单这几个"双方达成一致"的节点自动触发 `holdForContext()`，不需要用户手动发起支付——任务是发布者接受报价时（金额=报价），预约是客户输完短信验证码确认时（金额=服务价格，按时长折算），拼车是乘客下单成功时（金额=座位数×单价）。
+- **释放 (RELEASED)**：发布者确认任务完成 / 服务提供者标记预约完成 / 车主标记拼车预订完成时自动触发 `releaseForContext()`，按 `PLATFORM_FEE_PERCENT`（默认10%，env 可调）从总额里扣除平台服务费，净额记录在 `Payment.netAmount`，并尝试用 Stripe Connect 把净额转给收款人（`stripe.transfers.create`，目的地账号是收款人的 Connect Express 账号）。
+- **退款 (REFUNDED)**：完成前取消（任务取消、预约取消、拼车预订取消）自动触发 `refundForContext()`，原路退款。
+- **Stripe Connect 入驻**：个体户（跑腿者/服务提供者/车主）要先在 `/me`（web）或"我的" > 收款账号（mobile）完成 Stripe Connect Express 入驻才能真正收到分账转账；没入驻或 Stripe 未配置时，担保交易的托管/释放/退款记账（我们自己数据库里的状态机）照常运作，只是跳过真实的 Stripe 转账调用并记日志——这样即使暂时没有 Stripe 账号，业务流程也不会被卡住。
+- **`/me/payments`（web）/ "我的" > 我的交易（mobile）**：担保交易流水，按任务/预约/拼车分类展示托管中/已释放(含服务费明细)/已退款状态。
+
+⚠️ 目前还没有收银台前端——客户"付款"这件事本身（真实输入卡号完成 Stripe PaymentIntent）还没有 UI，`holdForContext` 只是把 `client_secret` 准备好等前端来接。所以"HELD"是我们自己数据库里的担保记账状态，不代表已经从客户卡里划走真实的钱；这个仓库的开发沙箱也没有配置真实的 `STRIPE_SECRET_KEY`。已经用真实多用户场景验证了完整的记账状态机本身（HELD→RELEASED 的服务费计算、HELD→REFUNDED）在这两种情况下都完全正确。
+
 ## 当前进度与后续规划
 
-已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、Stripe 支付意向创建、List/Map 视图切换、图片上传、地址正向地理编码、站内公开留言(含语音)。后续可继续完善：
+已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、担保交易(托管/释放/退款) + Stripe Connect 分账、List/Map 视图切换、图片上传、地址正向地理编码、站内公开留言(含语音)。后续可继续完善：
 
-- 支付担保交易的释放/退款触发逻辑、Stripe Connect 分账给跑腿者/服务提供者/车主
+- 收银台前端 (Stripe Elements 卡片输入 UI)：担保交易的托管/释放/退款逻辑已经完整跑通并接了真实的 Stripe PaymentIntent/Transfer/Refund API，但目前还没有客户实际输入卡号完成扣款的收银台页面——`PaymentsService.holdForContext` 已经把 `client_secret` 准备好了，接一个 Stripe Elements 组件就能用
 - 推送通知（`Notification` 表已就位，可接 Expo Push / FCM / APNs；`chat` 模块已经在发消息时创建 `NEW_MESSAGE` 通知，接上推送后可以直接用）
 - 多城市/多语言（en/zh）切换的完整落地
