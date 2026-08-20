@@ -110,6 +110,14 @@ export default function NewTaskScreen() {
           />
         </View>
 
+        <View style={styles.switchRow}>
+          <Text style={{ color: colors.text }}>加急/即时任务 (希望尽快有人接单)</Text>
+          <Switch
+            value={!!form.isUrgent}
+            onValueChange={(v) => setForm({ ...form, isUrgent: v })}
+          />
+        </View>
+
         <ErrorText>{error}</ErrorText>
 
         <PrimaryButton title="发布任务" onPress={submit} loading={submitting} />

@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import {
-  BookingDto,
-  NextAvailableSlotDto,
-  ServiceCategory,
-  ServiceTier,
-  SERVICE_CATEGORY_TIER,
-} from "@localhub/shared-types";
+import { BookingDto, NextAvailableSlotDto } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
@@ -31,6 +25,7 @@ interface ServiceDetail {
   currency: string;
   durationMinutes: number;
   serviceArea: string | null;
+  supportsInstantBooking: boolean;
   provider: { id: string; name: string };
   availability: { dayOfWeek: number; startTime: string; endTime: string }[];
 }
@@ -64,8 +59,6 @@ export default function ServiceDetailScreen() {
       </View>
     );
   }
-
-  const isImmediateTier = SERVICE_CATEGORY_TIER[service.category as ServiceCategory] === ServiceTier.IMMEDIATE;
 
   const quickBookEarliest = async () => {
     setError(null);
@@ -158,9 +151,9 @@ export default function ServiceDetailScreen() {
         </Card>
       )}
 
-      {user && !booking && isImmediateTier && (
+      {user && !booking && service.supportsInstantBooking && (
         <Card>
-          <Text style={styles.cardTitle}>即时/家政服务，可快速下单</Text>
+          <Text style={styles.cardTitle}>支持即时下单</Text>
           <Text style={styles.meta}>一键选中最早可用时段，确认地址即可提交</Text>
           <View style={{ height: 8 }} />
           <SecondaryButton title={quickBooking ? "查找中..." : "立即预约(最早可用)"} onPress={quickBookEarliest} disabled={quickBooking} />

@@ -17,6 +17,7 @@ interface TaskDetail {
   budgetMax: string | null;
   currency: string;
   status: TaskStatus;
+  isUrgent: boolean;
   assignedTaskerId: string | null;
   proofUrls: string[];
   completionNote: string | null;
@@ -70,7 +71,10 @@ export default function TaskDetailScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: 16, gap: 12 }}>
       <Card>
-        <Badge label={TASK_CATEGORY_LABELS[task.category]} />
+        <View style={{ flexDirection: "row", gap: 6 }}>
+          <Badge label={TASK_CATEGORY_LABELS[task.category]} />
+          {task.isUrgent && <Badge label="加急" />}
+        </View>
         <Text style={styles.title}>{task.title}</Text>
         <Text style={styles.desc}>{task.description}</Text>
         <Text style={styles.meta}>状态: {TASK_STATUS_LABELS[task.status]}</Text>

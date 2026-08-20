@@ -37,6 +37,7 @@ export class ServicesService {
         serviceArea: dto.serviceArea,
         city: dto.city,
         photos: dto.photos ?? [],
+        supportsInstantBooking: dto.supportsInstantBooking ?? false,
       },
     });
   }
@@ -48,6 +49,7 @@ export class ServicesService {
       active: true,
       ...(query.category ? { category: query.category } : {}),
       ...(query.city ? { city: query.city } : {}),
+      ...(query.instantOnly ? { supportsInstantBooking: true } : {}),
       ...(query.keyword
         ? {
             OR: [

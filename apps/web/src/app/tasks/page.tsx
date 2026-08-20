@@ -8,16 +8,19 @@ import { TASK_CATEGORY_LABELS, TASK_STATUS_LABELS } from "@/lib/labels";
 
 export default function TasksPage() {
   const [category, setCategory] = useState<TaskCategory | "">("");
+  const [urgentOnly, setUrgentOnly] = useState(false);
   const [data, setData] = useState<PaginatedResult<TaskDto> | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     api
-      .get<PaginatedResult<TaskDto>>(`/tasks${buildQuery({ category: category || undefined })}`)
+      .get<PaginatedResult<TaskDto>>(
+        `/tasks${buildQuery({ category: category || undefined, urgentOnly: urgentOnly || undefined })}`,
+      )
       .then(setData)
       .finally(() => setLoading(false));
-  }, [category]);
+  }, [category, urgentOnly]);
 
   return (
     <div>
@@ -27,6 +30,11 @@ export default function TasksPage() {
           + 发布任务
         </Link>
       </div>
+
+      <label className="mb-4 flex items-center gap-2 text-sm text-neutral-600">
+        <input type="checkbox" checked={urgentOnly} onChange={(e) => setUrgentOnly(e.target.checked)} />
+        只看加急/即时任务
+      </label>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <button
@@ -57,6 +65,9 @@ export default function TasksPage() {
                 <span className="rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600">
                   {TASK_CATEGORY_LABELS[task.category]}
                 </span>
+                {task.isUrgent && (
+                  <span className="ml-1 rounded bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">加急</span>
+                )}
                 <h3 className="mt-1 font-semibold">{task.title}</h3>
                 <p className="mt-1 line-clamp-2 text-sm text-neutral-600">{task.description}</p>
               </div>

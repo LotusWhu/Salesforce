@@ -30,6 +30,7 @@ export class TasksService {
         locationLng: dto.location?.lng,
         locationAddress: dto.location?.address,
         isRemote: dto.isRemote ?? false,
+        isUrgent: dto.isUrgent ?? false,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
         attachmentUrls: dto.attachmentUrls ?? [],
       },
@@ -45,6 +46,7 @@ export class TasksService {
       ...(query.category ? { category: query.category } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.city ? { city: query.city } : {}),
+      ...(query.urgentOnly ? { isUrgent: true } : {}),
       ...(query.keyword
         ? {
             OR: [

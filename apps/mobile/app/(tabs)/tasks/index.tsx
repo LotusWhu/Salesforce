@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, Switch, Text, View } from "react-native";
 import { PaginatedResult, TaskCategory, TaskDto } from "@localhub/shared-types";
 import { api, buildQuery } from "@/lib/api";
 import { TASK_CATEGORY_LABELS, TASK_STATUS_LABELS } from "@/lib/labels";
@@ -10,21 +10,29 @@ import { Pressable } from "react-native";
 export default function TasksListScreen() {
   const router = useRouter();
   const [category, setCategory] = useState<TaskCategory | "">("");
+  const [urgentOnly, setUrgentOnly] = useState(false);
   const [data, setData] = useState<PaginatedResult<TaskDto> | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
     api
-      .get<PaginatedResult<TaskDto>>(`/tasks${buildQuery({ category: category || undefined })}`)
+      .get<PaginatedResult<TaskDto>>(
+        `/tasks${buildQuery({ category: category || undefined, urgentOnly: urgentOnly || undefined })}`,
+      )
       .then(setData)
       .finally(() => setLoading(false));
-  }, [category]);
+  }, [category, urgentOnly]);
 
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
         <PrimaryButton title="+ 发布任务" onPress={() => router.push("/tasks/new")} />
+      </View>
+
+      <View style={styles.filterRow}>
+        <Switch value={urgentOnly} onValueChange={setUrgentOnly} />
+        <Text style={styles.filterLabel}>只看加急/即时任务</Text>
       </View>
 
       <FlatList
@@ -53,7 +61,10 @@ export default function TasksListScreen() {
         renderItem={({ item }) => (
           <Pressable onPress={() => router.push(`/tasks/${item.id}`)}>
             <Card>
-              <Badge label={TASK_CATEGORY_LABELS[item.category]} />
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                <Badge label={TASK_CATEGORY_LABELS[item.category]} />
+                {item.isUrgent && <Badge label="加急" />}
+              </View>
               <Text style={styles.title}>{item.title}</Text>
               <Text style={styles.desc} numberOfLines={2}>
                 {item.description}
@@ -75,6 +86,8 @@ export default function TasksListScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: { padding: 16, paddingBottom: 0, alignItems: "flex-end" },
+  filterRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingTop: 12 },
+  filterLabel: { fontSize: 13, color: colors.subtext },
   title: { fontSize: 16, fontWeight: "700", color: colors.text, marginTop: 6 },
   desc: { fontSize: 13, color: colors.subtext, marginTop: 4 },
   row: { flexDirection: "row", justifyContent: "space-between", marginTop: 8 },

@@ -17,6 +17,7 @@ interface TaskDetail {
   budgetMax: string | null;
   currency: string;
   status: TaskStatus;
+  isUrgent: boolean;
   assignedTaskerId: string | null;
   proofUrls: string[];
   completionNote: string | null;
@@ -67,6 +68,9 @@ export default function TaskDetailPage() {
         <span className="rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600">
           {TASK_CATEGORY_LABELS[task.category]}
         </span>
+        {task.isUrgent && (
+          <span className="ml-1 rounded bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">加急</span>
+        )}
         <h1 className="mt-2 text-xl font-bold">{task.title}</h1>
         <p className="mt-2 whitespace-pre-wrap text-neutral-700">{task.description}</p>
         <div className="mt-3 flex flex-wrap gap-4 text-sm text-neutral-500">

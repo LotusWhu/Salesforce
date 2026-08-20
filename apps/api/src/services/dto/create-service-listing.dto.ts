@@ -1,5 +1,5 @@
 import { PriceType, ServiceCategory } from "@localhub/shared-types";
-import { IsArray, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
 
 export class CreateServiceListingDto {
   @IsEnum(ServiceCategory)
@@ -41,4 +41,8 @@ export class CreateServiceListingDto {
   @IsArray()
   @IsString({ each: true })
   photos?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  supportsInstantBooking?: boolean;
 }

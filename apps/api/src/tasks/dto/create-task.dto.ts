@@ -50,6 +50,10 @@ export class CreateTaskDto {
   isRemote?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  isUrgent?: boolean;
+
+  @IsOptional()
   @IsDateString()
   dueDate?: string;
 

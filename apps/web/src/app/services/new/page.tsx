@@ -142,6 +142,15 @@ export default function NewServicePage() {
           />
         </div>
 
+        <label className="flex items-center gap-2 text-sm text-neutral-600">
+          <input
+            type="checkbox"
+            checked={form.supportsInstantBooking ?? false}
+            onChange={(e) => setForm({ ...form, supportsInstantBooking: e.target.checked })}
+          />
+          支持「即时」快速下单（客户可一键选中最早可用时段直接预约）
+        </label>
+
         <div>
           <label className="label">可预约时段</label>
           <div className="mb-2 flex flex-wrap gap-2">

@@ -1,45 +1,27 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import {
-  PaginatedResult,
-  ServiceCategory,
-  ServiceListingDto,
-  ServiceTier,
-  SERVICE_CATEGORY_TIER,
-} from "@localhub/shared-types";
+import { FlatList, Pressable, StyleSheet, Switch, Text, View } from "react-native";
+import { PaginatedResult, ServiceCategory, ServiceListingDto } from "@localhub/shared-types";
 import { api, buildQuery } from "@/lib/api";
 import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { Badge, Card, PrimaryButton, SecondaryButton, colors } from "@/components/ui";
 
-const TIER_TABS: { key: ServiceTier; label: string }[] = [
-  { key: ServiceTier.IMMEDIATE, label: "即时/家政" },
-  { key: ServiceTier.BIDDING, label: "竞价/比价" },
-];
-
 export default function ServicesListScreen() {
   const router = useRouter();
-  const [tier, setTier] = useState<ServiceTier>(ServiceTier.IMMEDIATE);
   const [category, setCategory] = useState<ServiceCategory | "">("");
+  const [instantOnly, setInstantOnly] = useState(false);
   const [data, setData] = useState<PaginatedResult<ServiceListingDto> | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const categoriesInTier = useMemo(
-    () => Object.entries(SERVICE_CATEGORY_LABELS).filter(([key]) => SERVICE_CATEGORY_TIER[key as ServiceCategory] === tier),
-    [tier],
-  );
-
-  useEffect(() => {
-    setCategory("");
-  }, [tier]);
 
   useEffect(() => {
     setLoading(true);
     api
-      .get<PaginatedResult<ServiceListingDto>>(`/services${buildQuery({ category: category || undefined })}`)
-      .then((res) => setData({ ...res, items: res.items.filter((s) => SERVICE_CATEGORY_TIER[s.category] === tier) }))
+      .get<PaginatedResult<ServiceListingDto>>(
+        `/services${buildQuery({ category: category || undefined, instantOnly: instantOnly || undefined })}`,
+      )
+      .then(setData)
       .finally(() => setLoading(false));
-  }, [category, tier]);
+  }, [category, instantOnly]);
 
   return (
     <View style={styles.screen}>
@@ -47,10 +29,9 @@ export default function ServicesListScreen() {
         <PrimaryButton title="+ 发布服务" onPress={() => router.push("/services/new")} />
       </View>
 
-      <View style={styles.tierRow}>
-        {TIER_TABS.map((t) => (
-          <SecondaryButton key={t.key} title={t.label} active={tier === t.key} onPress={() => setTier(t.key)} />
-        ))}
+      <View style={styles.filterRow}>
+        <Switch value={instantOnly} onValueChange={setInstantOnly} />
+        <Text style={styles.filterLabel}>只看支持「即时」快速下单的服务</Text>
       </View>
 
       <FlatList
@@ -62,7 +43,7 @@ export default function ServicesListScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             style={{ marginBottom: 12 }}
-            data={[["", "全部"], ...categoriesInTier]}
+            data={[["", "全部"], ...Object.entries(SERVICE_CATEGORY_LABELS)]}
             keyExtractor={([key]) => key}
             renderItem={({ item: [key, label] }) => (
               <View style={{ marginRight: 8 }}>
@@ -79,7 +60,10 @@ export default function ServicesListScreen() {
         renderItem={({ item }) => (
           <Pressable onPress={() => router.push(`/services/${item.id}`)}>
             <Card>
-              <Badge label={SERVICE_CATEGORY_LABELS[item.category]} />
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                <Badge label={SERVICE_CATEGORY_LABELS[item.category]} />
+                {item.supportsInstantBooking && <Badge label="即时可约" />}
+              </View>
               <Text style={styles.title}>{item.title}</Text>
               <Text style={styles.desc} numberOfLines={2}>
                 {item.description}
@@ -99,7 +83,8 @@ export default function ServicesListScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
   header: { padding: 16, paddingBottom: 0, alignItems: "flex-end" },
-  tierRow: { flexDirection: "row", gap: 8, paddingHorizontal: 16, paddingTop: 12 },
+  filterRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingTop: 12 },
+  filterLabel: { fontSize: 13, color: colors.subtext },
   title: { fontSize: 16, fontWeight: "700", color: colors.text, marginTop: 6 },
   desc: { fontSize: 13, color: colors.subtext, marginTop: 4 },
   price: { fontSize: 13, color: colors.brandDark, fontWeight: "600", marginTop: 6 },

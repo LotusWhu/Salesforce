@@ -134,6 +134,14 @@ export default function NewServiceScreen() {
           <TextField value={form.city ?? ""} onChangeText={(v) => setForm({ ...form, city: v, serviceArea: v })} />
         </Field>
 
+        <Field label="即时下单">
+          <SecondaryButton
+            title={form.supportsInstantBooking ? "✓ 支持「即时」快速下单" : "支持「即时」快速下单"}
+            active={!!form.supportsInstantBooking}
+            onPress={() => setForm({ ...form, supportsInstantBooking: !form.supportsInstantBooking })}
+          />
+        </Field>
+
         <Field label="可预约时段">
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
             {WEEKDAYS.map((label, idx) => (

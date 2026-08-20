@@ -17,6 +17,7 @@ export interface TaskDto {
   currency: string; // "AUD"
   location?: GeoPoint | null;
   isRemote: boolean; // 例如代买票可远程完成，无需上门
+  isUrgent: boolean; // 发布者标记的加急/即时任务，需要尽快有人接单
   dueDate?: string | null;
   status: TaskStatus;
   assignedTaskerId?: string | null;
@@ -34,6 +35,7 @@ export interface CreateTaskDto {
   currency?: string;
   location?: GeoPoint;
   isRemote?: boolean;
+  isUrgent?: boolean;
   dueDate?: string;
   attachmentUrls?: string[];
 }
@@ -73,6 +75,7 @@ export interface ListTasksQuery {
   status?: TaskStatus;
   city?: string;
   keyword?: string;
+  urgentOnly?: boolean; // 只看加急/即时任务
   page?: number;
   pageSize?: number;
 }

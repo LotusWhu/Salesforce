@@ -126,6 +126,15 @@ export default function NewTaskPage() {
           此任务无需上门 (如代买票、线上代办)
         </label>
 
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.isUrgent ?? false}
+            onChange={(e) => setForm({ ...form, isUrgent: e.target.checked })}
+          />
+          加急/即时任务 (希望尽快有人接单)
+        </label>
+
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button className="btn-primary w-full" onClick={submit} disabled={submitting}>

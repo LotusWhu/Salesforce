@@ -1,6 +1,6 @@
 import { ServiceCategory } from "@localhub/shared-types";
 import { Type } from "class-transformer";
-import { IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
+import { IsBoolean, IsEnum, IsInt, IsOptional, IsString, Min } from "class-validator";
 
 export class ListServicesQueryDto {
   @IsOptional()
@@ -14,6 +14,11 @@ export class ListServicesQueryDto {
   @IsOptional()
   @IsString()
   keyword?: string;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  instantOnly?: boolean;
 
   @IsOptional()
   @Type(() => Number)

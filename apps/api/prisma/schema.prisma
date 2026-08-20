@@ -138,6 +138,7 @@ model Task {
   locationAddress  String?
   city             String?
   isRemote         Boolean      @default(false)
+  isUrgent         Boolean      @default(false)
   dueDate          DateTime?
   status           TaskStatus   @default(OPEN)
   assignedTaskerId String?
@@ -213,6 +214,7 @@ model ServiceListing {
   city            String?
   photos          String[]        @default([])
   active          Boolean         @default(true)
+  supportsInstantBooking Boolean  @default(false)
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
