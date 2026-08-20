@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { TaskOfferDto, TaskStatus } from "@localhub/shared-types";
+import { ConversationContextType, TaskOfferDto, TaskStatus } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { TASK_CATEGORY_LABELS, TASK_STATUS_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import PhotoGallery from "@/components/PhotoGallery";
 import ImageUploader from "@/components/ImageUploader";
+import MessageThread from "@/components/MessageThread";
 
 interface TaskDetail {
   id: string;
@@ -189,6 +190,8 @@ export default function TaskDetailPage() {
           取消任务
         </button>
       )}
+
+      <MessageThread contextType={ConversationContextType.TASK} contextId={task.id} />
     </div>
   );
 }

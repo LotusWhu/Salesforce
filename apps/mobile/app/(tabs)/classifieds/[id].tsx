@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { ClassifiedListingDto } from "@localhub/shared-types";
+import { ClassifiedListingDto, ConversationContextType } from "@localhub/shared-types";
 import { api } from "@/lib/api";
 import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
 import { Badge, Card, colors } from "@/components/ui";
 import PhotoGallery from "@/components/PhotoGallery";
+import MessageThread from "@/components/MessageThread";
 
 export default function ClassifiedDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -37,6 +38,9 @@ export default function ClassifiedDetailScreen() {
         </Text>
         <PhotoGallery urls={item.photos} />
       </Card>
+
+      <View style={{ height: 12 }} />
+      <MessageThread contextType={ConversationContextType.CLASSIFIED_LISTING} contextId={item.id} />
     </ScrollView>
   );
 }

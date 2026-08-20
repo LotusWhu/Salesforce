@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { GeoPoint } from "@localhub/shared-types";
+import { ConversationContextType, GeoPoint } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { CARPOOL_TYPE_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import MessageThread from "@/components/MessageThread";
 
 interface TripDetail {
   id: string;
@@ -125,6 +126,8 @@ export default function CarpoolTripDetailPage() {
           ))}
         </div>
       )}
+
+      <MessageThread contextType={ConversationContextType.CARPOOL_TRIP} contextId={trip.id} />
     </div>
   );
 }

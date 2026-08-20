@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { GeoPoint } from "@localhub/shared-types";
+import { ConversationContextType, GeoPoint } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { CARPOOL_TYPE_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import { Badge, Card, ErrorText, Field, PrimaryButton, SuccessText, TextField, colors } from "@/components/ui";
+import MessageThread from "@/components/MessageThread";
 
 interface TripDetail {
   id: string;
@@ -122,6 +123,8 @@ export default function CarpoolTripDetailScreen() {
           ))}
         </Card>
       )}
+
+      <MessageThread contextType={ConversationContextType.CARPOOL_TRIP} contextId={trip.id} />
     </ScrollView>
   );
 }

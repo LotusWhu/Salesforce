@@ -173,3 +173,10 @@ export enum NotificationType {
   NEW_MESSAGE = "NEW_MESSAGE",
   REVIEW_RECEIVED = "REVIEW_RECEIVED",
 }
+
+export enum ConversationContextType {
+  TASK = "TASK",
+  BOOKING = "BOOKING",
+  CARPOOL_TRIP = "CARPOOL_TRIP",
+  CLASSIFIED_LISTING = "CLASSIFIED_LISTING",
+}

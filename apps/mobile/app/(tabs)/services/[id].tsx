@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { BookingDto, NextAvailableSlotDto } from "@localhub/shared-types";
+import { BookingDto, ConversationContextType, NextAvailableSlotDto } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import { Badge, Card, ErrorText, Field, PrimaryButton, SecondaryButton, SuccessText, TextField, colors } from "@/components/ui";
 import PhotoGallery from "@/components/PhotoGallery";
+import MessageThread from "@/components/MessageThread";
 
 function toLocalDateInput(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -201,6 +202,8 @@ export default function ServiceDetailScreen() {
           <SuccessText>{message ?? "预约已确认"}</SuccessText>
         </Card>
       )}
+
+      {booking && <MessageThread contextType={ConversationContextType.BOOKING} contextId={booking.id} />}
     </ScrollView>
   );
 }

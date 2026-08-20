@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { ClassifiedListingDto } from "@localhub/shared-types";
+import { ClassifiedListingDto, ConversationContextType } from "@localhub/shared-types";
 import { api } from "@/lib/api";
 import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
 import PhotoGallery from "@/components/PhotoGallery";
+import MessageThread from "@/components/MessageThread";
 
 export default function ClassifiedDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -32,6 +33,10 @@ export default function ClassifiedDetailPage() {
         </p>
         <p className="mt-2 text-sm text-neutral-500">发布者: {item.poster.name} · 浏览量: {item.viewCount}</p>
         <PhotoGallery urls={item.photos} />
+      </div>
+
+      <div className="mt-4">
+        <MessageThread contextType={ConversationContextType.CLASSIFIED_LISTING} contextId={item.id} />
       </div>
     </div>
   );

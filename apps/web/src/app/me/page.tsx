@@ -136,6 +136,18 @@ export default function MePage() {
           </Link>
         </div>
       </div>
+
+      <div className="card">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold">我的消息</h2>
+            <p className="mt-1 text-sm text-neutral-500">跑腿任务/预约/拼车/分类信息下的公开留言</p>
+          </div>
+          <Link href="/me/messages" className="btn-secondary text-sm">
+            查看消息
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

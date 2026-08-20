@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { TaskOfferDto, TaskStatus } from "@localhub/shared-types";
+import { ConversationContextType, TaskOfferDto, TaskStatus } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { TASK_CATEGORY_LABELS, TASK_STATUS_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import { Badge, Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
 import PhotoGallery from "@/components/PhotoGallery";
 import ImageUploader from "@/components/ImageUploader";
+import MessageThread from "@/components/MessageThread";
 
 interface TaskDetail {
   id: string;
@@ -176,6 +177,8 @@ export default function TaskDetailScreen() {
       {isPoster && (task.status === "OPEN" || task.status === "OFFERED") && (
         <SecondaryButton title="取消任务" onPress={() => run(() => api.post(`/tasks/${id}/cancel`))} disabled={busy} />
       )}
+
+      <MessageThread contextType={ConversationContextType.TASK} contextId={task.id} />
     </ScrollView>
   );
 }

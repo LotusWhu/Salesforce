@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { BookingDto, NextAvailableSlotDto } from "@localhub/shared-types";
+import { BookingDto, ConversationContextType, NextAvailableSlotDto } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import PhotoGallery from "@/components/PhotoGallery";
+import MessageThread from "@/components/MessageThread";
 
 function toLocalDateInput(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -213,6 +214,8 @@ export default function ServiceDetailPage() {
           <p className="text-green-600">{message ?? "预约已确认"}</p>
         </div>
       )}
+
+      {booking && <MessageThread contextType={ConversationContextType.BOOKING} contextId={booking.id} />}
     </div>
   );
 }

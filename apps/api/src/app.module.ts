@@ -11,6 +11,7 @@ import { ClassifiedsModule } from "./classifieds/classifieds.module";
 import { PaymentsModule } from "./payments/payments.module";
 import { UploadsModule } from "./uploads/uploads.module";
 import { GeocodeModule } from "./geocode/geocode.module";
+import { ChatModule } from "./chat/chat.module";
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { GeocodeModule } from "./geocode/geocode.module";
     PaymentsModule,
     UploadsModule,
     GeocodeModule,
+    ChatModule,
   ],
 })
 export class AppModule {}

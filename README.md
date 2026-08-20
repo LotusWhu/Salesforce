@@ -134,11 +134,21 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 
 后续要换 Google Geocoding API：只需要替换 `GeocodeService.search()` 的实现，`GeocodeController` 和前端 `GeocodeResultDto` 结构都不用变。
 
+## 站内消息
+
+跑腿任务、上门服务预约、拼车行程、分类信息详情页底部都有一个"留言区"（`apps/api/src/chat/`，web `MessageThread.tsx` / mobile `MessageThread.tsx`）。这是刻意设计成**公开留言流**（类似帖子评论区），不是私信：
+
+- **为什么是公开的**：接单/预约场景下，私信容易被拿来私下交换联系方式绕开平台，公开留言流让沟通对所有相关人可见，方便日后有纠纷时仲裁，也降低私下加微信/打电话的诱惑。`Conversation` 按 `(contextType, contextId)` 唯一，`GET .../messages` 不做参与者白名单校验——任何人都能读，登录用户都能发言，不局限于"发布者+接单者"两人。
+- **电话号码拦截**：`apps/api/src/chat/phone-filter.ts` 用启发式规则拦截消息里的电话号码——把文本中数字之间的空格/短横线/点/括号等分隔符去掉后，只要连续数字 ≥8 位就拒绝发送（返回 400 提示"请通过站内消息完成沟通"）。这会有一些误伤（比如长订单号），但作为一个安全类功能，宁可拦多一点。
+- **语音消息**：网页版用浏览器原生 `MediaRecorder`录 `audio/webm`，App 端用 `expo-audio` 的 `useAudioRecorder` 录 `.m4a`，都是复用已有的 `/uploads` 接口上传（音频 mimetype 早就在白名单里）。消息列表按附件 URL 的扩展名识别是图片还是语音，语音渲染成播放器（网页版原生 `<audio>`，App 端 `expo-audio` 的 `useAudioPlayer` 做播放/暂停）。
+- **通知与收件箱**：发消息后台会给"该被通知的人"（任务发布者/接单者、预约双方、拼车司机、分类信息发布者，以及所有之前在这个话题下留过言的人，排除自己）创建 `NEW_MESSAGE` 通知；`GET /chat/mine` 是"我的消息"收件箱（web `/me/messages`，mobile `profile/messages.tsx`），按最后留言时间排序，未读会有红点提示。
+
+已用真实多用户场景端到端验证：未登录可读不可发、正常留言可见、电话号码留言被拒绝且不出现在留言流里、纯语音留言（无文字）可发送并渲染播放器、空消息被拒绝、给不存在的任务发消息返回404，以及 Playwright 驱动网页端在任务/拼车/分类信息三个详情页实际发送并看到留言。
+
 ## 当前进度与后续规划
 
-已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、Stripe 支付意向创建、List/Map 视图切换、图片上传、地址正向地理编码。后续可继续完善：
+已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、Stripe 支付意向创建、List/Map 视图切换、图片上传、地址正向地理编码、站内公开留言(含语音)。后续可继续完善：
 
-- 站内消息聊天页面（数据模型已设计 `Conversation`/`Message`，尚未接 UI）；语音消息也需要复用图片上传的存储层（音频 mimetype 已经在 `ALLOWED_AUDIO_MIME_TYPES` 里预留好了）
 - 支付担保交易的释放/退款触发逻辑、Stripe Connect 分账给跑腿者/服务提供者/车主
-- 推送通知（`Notification` 表已就位，可接 Expo Push / FCM / APNs）
+- 推送通知（`Notification` 表已就位，可接 Expo Push / FCM / APNs；`chat` 模块已经在发消息时创建 `NEW_MESSAGE` 通知，接上推送后可以直接用）
 - 多城市/多语言（en/zh）切换的完整落地

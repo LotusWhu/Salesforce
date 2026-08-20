@@ -109,6 +109,13 @@ export default function ProfileTab() {
         <View style={{ height: 8 }} />
         <SecondaryButton title="查看日程" onPress={() => router.push("/profile/schedule")} />
       </Card>
+
+      <Card>
+        <Text style={styles.cardTitle}>我的消息</Text>
+        <Text style={styles.subtitle}>跑腿任务/预约/拼车/分类信息下的公开留言</Text>
+        <View style={{ height: 8 }} />
+        <SecondaryButton title="查看消息" onPress={() => router.push("/profile/messages")} />
+      </Card>
     </View>
   );
 }
