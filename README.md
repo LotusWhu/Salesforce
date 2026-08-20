@@ -112,7 +112,7 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 
 - 网页版：`apps/web/src/components/MapView.tsx`（Leaflet + `react-leaflet`，`DynamicMapView.tsx` 做了 `next/dynamic` 的 SSR 禁用包装）
 - App 端：`apps/mobile/src/components/MapView.tsx`（`react-native-webview` 里内嵌一个自包含的 Leaflet HTML 页面，这样 iOS/Android 都不需要 Google Maps SDK/API Key 就能跑）
-- 两端都配了 `apps/*/src/components/LocationPicker.tsx`：点击地图选点 + 可选地址描述文本，回填到发布表单的 `location: {lat, lng, address}` 字段
+- 两端都配了 `apps/*/src/components/LocationPicker.tsx`：既可以直接点击地图选点，也可以在地址输入框打字搜索（防抖 500ms 调用 `GET /geocode`，下拉候选列表选中后自动回填坐标并把地图移过去），回填到发布表单的 `location: {lat, lng, address}` 字段
 
 ⚠️ 地图瓦片（`tile.openstreetmap.org`）走的是真实外网请求，本仓库当前的开发沙箱网络策略屏蔽了这类外部域名，所以瓦片图片在这个沙箱里加载不出来（会看到空白/灰色底图），但地图容器、点击选点、标记点、List/Map 切换等交互逻辑都已经用 Playwright 端到端验证过，属于沙箱网络限制而非代码问题，用户自己的电脑/正式部署环境不受影响。
 
@@ -128,11 +128,16 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 - `ServiceListing`/`ClassifiedListing`/`Task`(`attachmentUrls`) 的发布表单和详情页都接了 `ImageUploader`（选图→自动上传→回填 URL 数组）和 `PhotoGallery`（详情页缩略图画廊）组件，web (`apps/web/src/components/ImageUploader.tsx`) 用原生 `<input type="file">`，mobile (`apps/mobile/src/components/ImageUploader.tsx`) 用 `expo-image-picker`。任务的"完成凭证"提交也从手填逗号分隔 URL 换成了同一套上传组件。
 - 已用真实二进制 PNG 端到端验证：鉴权拒绝未登录请求、mimetype 白名单拒绝非法类型、超过 30MB 返回 413、上传成功后文件可通过返回的 URL 公开访问，以及 Playwright 驱动网页端实际选图→上传→提交→详情页展示全流程。
 
+## 地址正向地理编码
+
+`GET /geocode?q=<关键词>`（`apps/api/src/geocode/`）代理 OpenStreetMap 免费的 Nominatim 搜索接口，把用户打字的地址转成 `{lat, lng, displayName}[]` 候选列表。做了两层防护：请求间隔全局串行节流到 ≥1.1 秒/次（Nominatim 使用政策要求单应用 ≤1 req/秒），以及固定的标识性 User-Agent（Nominatim 禁止用浏览器默认 UA）。网络失败/超时会静默降级返回空数组，不会导致地图选点表单报错——本仓库当前的开发沙箱网络策略本身就屏蔽了 `nominatim.openstreetmap.org`（已确认返回 403），已验证这条降级路径在沙箱里工作正常，手动点地图选点作为后备方式全程可用；用户自己的电脑/正式部署环境网络不受限，地址自动补全会正常工作。
+
+后续要换 Google Geocoding API：只需要替换 `GeocodeService.search()` 的实现，`GeocodeController` 和前端 `GeocodeResultDto` 结构都不用变。
+
 ## 当前进度与后续规划
 
-已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、Stripe 支付意向创建、List/Map 视图切换、图片上传。后续可继续完善：
+已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、Stripe 支付意向创建、List/Map 视图切换、图片上传、地址正向地理编码。后续可继续完善：
 
-- 地址文本自动转坐标 (正向地理编码)：当前地图选点是手动点击，地址输入框只是纯文本标签，还没接 Nominatim/Google Geocoding API 自动把打字的地址转成坐标
 - 站内消息聊天页面（数据模型已设计 `Conversation`/`Message`，尚未接 UI）；语音消息也需要复用图片上传的存储层（音频 mimetype 已经在 `ALLOWED_AUDIO_MIME_TYPES` 里预留好了）
 - 支付担保交易的释放/退款触发逻辑、Stripe Connect 分账给跑腿者/服务提供者/车主
 - 推送通知（`Notification` 表已就位，可接 Expo Push / FCM / APNs）

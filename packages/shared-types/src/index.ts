@@ -9,3 +9,4 @@ export * from "./chat";
 export * from "./payment";
 export * from "./notification";
 export * from "./upload";
+export * from "./geocode";
