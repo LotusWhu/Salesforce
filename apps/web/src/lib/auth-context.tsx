@@ -1,0 +1,64 @@
+"use client";
+
+import { UserProfile } from "@localhub/shared-types";
+import { createContext, PropsWithChildren, useContext, useEffect, useState } from "react";
+import { api, getToken, setToken } from "./api";
+
+interface AuthContextValue {
+  user: UserProfile | null;
+  loading: boolean;
+  loginWithToken: (token: string) => Promise<void>;
+  logout: () => void;
+  refresh: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: PropsWithChildren) {
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = async () => {
+    if (!getToken()) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+    try {
+      const me = await api.get<UserProfile>("/me");
+      setUser(me);
+    } catch {
+      setToken(null);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loginWithToken = async (token: string) => {
+    setToken(token);
+    await refresh();
+  };
+
+  const logout = () => {
+    setToken(null);
+    setUser(null);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, loginWithToken, logout, refresh }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth 必须在 AuthProvider 内使用");
+  return ctx;
+}

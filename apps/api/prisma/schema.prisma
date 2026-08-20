@@ -1,0 +1,595 @@
+// 华人生活服务平台 - 数据库 Schema
+// 覆盖: 任务外包/跑腿代办, 上门服务预约(含Google Calendar), 拼车接送机, 分类信息
+// 以及通用的用户/验证码/聊天/支付/评价/通知
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// 用户与认证
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  CUSTOMER
+  PROVIDER
+  BOTH
+  ADMIN
+}
+
+enum Language {
+  zh
+  en
+}
+
+model User {
+  id                      String   @id @default(cuid())
+  phone                   String   @unique
+  email                   String?  @unique
+  name                    String
+  avatarUrl               String?
+  role                    UserRole @default(CUSTOMER)
+  language                Language @default(zh)
+  city                    String?
+  phoneVerified           Boolean  @default(false)
+  ratingAvg               Float    @default(0)
+  ratingCount             Int      @default(0)
+  // Google Calendar OAuth (用于上门服务预约同步日程)
+  googleRefreshToken      String?
+  googleCalendarId        String?
+  googleCalendarConnected Boolean  @default(false)
+  // Stripe Connect (用于担保交易完成后把款项打给跑腿者/服务提供者/车主个体户)
+  stripeConnectedAccountId String?
+  stripeConnectOnboarded   Boolean  @default(false)
+  // Expo Push Token (App 端注册，用于推送新报价/预约确认/消息/支付到账等通知)
+  expoPushToken            String?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+
+  tasksPosted        Task[]                    @relation("TaskPoster")
+  tasksAssigned      Task[]                    @relation("TaskTasker")
+  taskOffers         TaskOffer[]
+  services           ServiceListing[]
+  bookingsAsCustomer Booking[]                 @relation("BookingCustomer")
+  bookingsAsProvider Booking[]                 @relation("BookingProvider")
+  carpoolTrips       CarpoolTrip[]
+  carpoolBookings    CarpoolBooking[]
+  carpoolRequests    CarpoolRequest[]
+  classifieds        ClassifiedListing[]
+  reviewsGiven       Review[]                  @relation("ReviewsGiven")
+  reviewsReceived    Review[]                  @relation("ReviewsReceived")
+  messages           Message[]
+  conversations      ConversationParticipant[]
+  notifications      Notification[]
+  paymentsAsPayer    Payment[]                 @relation("PaymentsAsPayer")
+  paymentsAsPayee    Payment[]                 @relation("PaymentsAsPayee")
+  otpCodes           OtpCode[]
+
+  @@index([city])
+}
+
+enum OtpPurpose {
+  LOGIN
+  BOOKING_CONFIRM
+  TASK_COMPLETE_CONFIRM
+}
+
+enum OtpChannel {
+  SMS
+  EMAIL
+}
+
+model OtpCode {
+  id         String     @id @default(cuid())
+  phone      String
+  codeHash   String
+  purpose    OtpPurpose
+  channel    OtpChannel @default(SMS)
+  userId     String?
+  user       User?      @relation(fields: [userId], references: [id])
+  expiresAt  DateTime
+  consumedAt DateTime?
+  attempts   Int        @default(0)
+  createdAt  DateTime   @default(now())
+
+  @@index([phone, purpose])
+}
+
+// ---------------------------------------------------------------------------
+// 任务外包 / 跑腿代办 (Airtasker 风格, 含代买票/代看房拍照)
+// ---------------------------------------------------------------------------
+
+enum TaskCategory {
+  BUY_TICKET
+  HOUSE_VIEWING_PHOTO
+  DELIVERY
+  QUEUE_UP
+  SHOPPING
+  MOVING
+  ASSEMBLY
+  IT_HELP
+  DOCUMENT_HELP
+  OTHER
+}
+
+enum TaskStatus {
+  OPEN
+  OFFERED
+  ASSIGNED
+  IN_PROGRESS
+  SUBMITTED
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+model Task {
+  id               String       @id @default(cuid())
+  posterId         String
+  poster           User         @relation("TaskPoster", fields: [posterId], references: [id])
+  category         TaskCategory
+  title            String
+  description      String
+  budgetMin        Decimal?     @db.Decimal(10, 2)
+  budgetMax        Decimal?     @db.Decimal(10, 2)
+  currency         String       @default("AUD")
+  locationLat      Float?
+  locationLng      Float?
+  locationAddress  String?
+  city             String?
+  isRemote         Boolean      @default(false)
+  isUrgent         Boolean      @default(false)
+  dueDate          DateTime?
+  status           TaskStatus   @default(OPEN)
+  assignedTaskerId String?
+  assignedTasker   User?        @relation("TaskTasker", fields: [assignedTaskerId], references: [id])
+  attachmentUrls   String[]     @default([])
+  proofUrls        String[]     @default([])
+  completionNote   String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  offers   TaskOffer[]
+  reviews  Review[]    @relation("TaskReviews")
+  payments Payment[]   @relation("TaskPayments")
+
+  @@index([category, status])
+  @@index([city])
+}
+
+enum TaskOfferStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+model TaskOffer {
+  id        String          @id @default(cuid())
+  taskId    String
+  task      Task            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskerId  String
+  tasker    User            @relation(fields: [taskerId], references: [id])
+  price     Decimal         @db.Decimal(10, 2)
+  message   String?
+  status    TaskOfferStatus @default(PENDING)
+  createdAt DateTime        @default(now())
+
+  @@unique([taskId, taskerId])
+}
+
+// ---------------------------------------------------------------------------
+// 上门服务预约 (保洁/美甲/钢琴教学等, Google Calendar 同步 + OTP 确认)
+// ---------------------------------------------------------------------------
+
+enum ServiceCategory {
+  HOUSE_CLEANING
+  MOVE_OUT_CLEANING
+  NAIL_SALON
+  HAIR_STYLING
+  PIANO_LESSON
+  TUTORING
+  MASSAGE
+  PET_CARE
+  OTHER
+}
+
+enum PriceType {
+  FIXED
+  HOURLY
+}
+
+model ServiceListing {
+  id              String          @id @default(cuid())
+  providerId      String
+  provider        User            @relation(fields: [providerId], references: [id])
+  category        ServiceCategory
+  title           String
+  description     String
+  priceType       PriceType
+  price           Decimal         @db.Decimal(10, 2)
+  currency        String          @default("AUD")
+  durationMinutes Int
+  serviceArea     String?
+  city            String?
+  locationLat     Float?
+  locationLng     Float?
+  locationAddress String?
+  photos          String[]        @default([])
+  active          Boolean         @default(true)
+  supportsInstantBooking Boolean  @default(false)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  availability ServiceAvailability[]
+  bookings     Booking[]
+
+  @@index([category, city])
+}
+
+model ServiceAvailability {
+  id        String         @id @default(cuid())
+  serviceId String
+  service   ServiceListing @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  dayOfWeek Int // 0=周日 .. 6=周六
+  startTime String // "09:00"
+  endTime   String // "18:00"
+
+  @@index([serviceId])
+}
+
+enum BookingStatus {
+  PENDING_CONFIRMATION
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Booking {
+  id                    String         @id @default(cuid())
+  serviceId             String
+  service               ServiceListing @relation(fields: [serviceId], references: [id])
+  customerId            String
+  customer              User           @relation("BookingCustomer", fields: [customerId], references: [id])
+  providerId            String
+  provider              User           @relation("BookingProvider", fields: [providerId], references: [id])
+  scheduledStart        DateTime
+  scheduledEnd          DateTime
+  addressLat            Float?
+  addressLng            Float?
+  addressText           String?
+  status                BookingStatus  @default(PENDING_CONFIRMATION)
+  googleCalendarEventId String?
+  otpVerifiedAt         DateTime?
+  notes                 String?
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  reviews  Review[]  @relation("BookingReviews")
+  payments Payment[] @relation("BookingPayments")
+
+  @@index([providerId, scheduledStart])
+  @@index([customerId])
+}
+
+// ---------------------------------------------------------------------------
+// 拼车接送机 (Nearme 风格)
+// ---------------------------------------------------------------------------
+
+enum CarpoolType {
+  AIRPORT_PICKUP
+  AIRPORT_DROPOFF
+  CITY_RIDE
+}
+
+enum CarpoolTripStatus {
+  OPEN
+  FULL
+  CLOSED
+  CANCELLED
+  COMPLETED
+}
+
+model CarpoolTrip {
+  id                 String            @id @default(cuid())
+  driverId           String
+  driver             User              @relation(fields: [driverId], references: [id])
+  type               CarpoolType
+  originLat          Float
+  originLng          Float
+  originAddress      String
+  destinationLat     Float
+  destinationLng     Float
+  destinationAddress String
+  city               String?
+  departureTime      DateTime
+  flightNumber       String?
+  totalSeats         Int
+  seatsAvailable     Int
+  // basePricePerSeat: 满座前的起始单价; pricePerSeat: 当前有效单价，随拼车人数增多而动态下调
+  basePricePerSeat   Decimal           @db.Decimal(10, 2)
+  pricePerSeat       Decimal           @db.Decimal(10, 2)
+  currency           String            @default("AUD")
+  notes              String?
+  status             CarpoolTripStatus @default(OPEN)
+  createdAt          DateTime          @default(now())
+
+  bookings CarpoolBooking[]
+  requests CarpoolRequest[]
+
+  @@index([type, city, departureTime])
+}
+
+enum CarpoolBookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model CarpoolBooking {
+  id          String               @id @default(cuid())
+  tripId      String
+  trip        CarpoolTrip          @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  passengerId String
+  passenger   User                 @relation(fields: [passengerId], references: [id])
+  seats       Int                  @default(1)
+  totalPrice  Decimal              @db.Decimal(10, 2)
+  status      CarpoolBookingStatus @default(PENDING)
+  createdAt   DateTime             @default(now())
+
+  payments Payment[]       @relation("CarpoolBookingPayments")
+  request  CarpoolRequest?
+
+  @@index([tripId])
+}
+
+// ---------------------------------------------------------------------------
+// 拼车需求 (乘客发起的接送机需求，系统自动匹配到已有行程或等待新行程吸纳)
+// ---------------------------------------------------------------------------
+
+enum CarpoolFareMode {
+  ONE_WAY
+  ROUND_TRIP
+}
+
+enum CarpoolRequestStatus {
+  PENDING // 待匹配，进入匹配池等待
+  MATCHED // 已自动匹配到某个行程
+  CANCELLED
+  EXPIRED
+}
+
+model CarpoolRequest {
+  id                   String               @id @default(cuid())
+  passengerId          String
+  passenger            User                 @relation(fields: [passengerId], references: [id])
+  type                 CarpoolType // AIRPORT_DROPOFF=送机(To Airport) / AIRPORT_PICKUP=接机(From Airport)
+  airport              String
+  terminal             String?
+  otherLocationLat     Float
+  otherLocationLng     Float
+  otherLocationAddress String
+  city                 String?
+  // 送机: 期望登车时间; 接机: 航班到达时间
+  scheduledTime        DateTime
+  flightNumber         String?
+  passengerCount       Int                  @default(1)
+  luggageCount         Int                  @default(1)
+  fareMode             CarpoolFareMode      @default(ONE_WAY)
+  returnScheduledTime  DateTime?
+  // 可接受的匹配时间窗口(分钟)，越大越容易被拼进同一趟车、单价越低
+  flexibilityMinutes   Int                  @default(60)
+  status               CarpoolRequestStatus @default(PENDING)
+  matchedTripId        String?
+  matchedTrip          CarpoolTrip?         @relation(fields: [matchedTripId], references: [id])
+  matchedBookingId     String?              @unique
+  matchedBooking       CarpoolBooking?      @relation(fields: [matchedBookingId], references: [id])
+  createdAt            DateTime             @default(now())
+
+  @@index([type, city, scheduledTime, status])
+}
+
+// ---------------------------------------------------------------------------
+// 分类信息 (Craigslist 风格)
+// ---------------------------------------------------------------------------
+
+enum ClassifiedCategory {
+  LOCAL_INFO // 本地资讯
+  RENTAL // 房屋租赁
+  REAL_ESTATE_SALE // 房屋交易
+  VEHICLE // 车辆交易
+  JOB // 求职招聘
+  SECOND_HAND // 二手市场
+  BUSINESS_SALE // 生意买卖
+  PET // 宠物交易
+  ACCOUNTING_TAX // 会计税务
+  MOVING_LOGISTICS // 物流搬运
+  CLEANING // 清洁通渠
+  GARDENING // 园艺绿化
+  PLUMBING_ELECTRICAL // 水管电工
+  NANNY_CONFINEMENT // 保姆月嫂
+  RENOVATION // 建筑家装
+  DRIVING_SCHOOL // 驾校招生
+  LOAN // 贷款
+  LIFE_SERVICES // 生活服务
+  FREE // 免费赠送
+  OTHER // 其他
+}
+
+enum ClassifiedStatus {
+  ACTIVE
+  SOLD
+  EXPIRED
+  REMOVED
+}
+
+model ClassifiedListing {
+  id          String             @id @default(cuid())
+  posterId    String
+  poster      User               @relation(fields: [posterId], references: [id])
+  category    ClassifiedCategory
+  title       String
+  description String
+  price       Decimal?           @db.Decimal(10, 2)
+  currency    String             @default("AUD")
+  photos      String[]           @default([])
+  locationLat Float?
+  locationLng Float?
+  city        String?
+  status      ClassifiedStatus   @default(ACTIVE)
+  viewCount   Int                @default(0)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([category, city, status])
+}
+
+// ---------------------------------------------------------------------------
+// 聊天 / 消息 (任务、预约、拼车、分类信息四个场景通用)
+// ---------------------------------------------------------------------------
+
+enum ConversationContextType {
+  TASK
+  BOOKING
+  CARPOOL_TRIP
+  CLASSIFIED_LISTING
+}
+
+model Conversation {
+  id            String                  @id @default(cuid())
+  contextType   ConversationContextType
+  contextId     String
+  lastMessageAt DateTime?
+  createdAt     DateTime                @default(now())
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@unique([contextType, contextId])
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  lastReadAt     DateTime?
+
+  @@unique([conversationId, userId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  text           String
+  attachmentUrls String[]     @default([])
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// 评价
+// ---------------------------------------------------------------------------
+
+model Review {
+  id         String   @id @default(cuid())
+  reviewerId String
+  reviewer   User     @relation("ReviewsGiven", fields: [reviewerId], references: [id])
+  revieweeId String
+  reviewee   User     @relation("ReviewsReceived", fields: [revieweeId], references: [id])
+  rating     Int // 1-5
+  comment    String?
+  taskId     String?
+  task       Task?    @relation("TaskReviews", fields: [taskId], references: [id])
+  bookingId  String?
+  booking    Booking? @relation("BookingReviews", fields: [bookingId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([revieweeId])
+}
+
+// ---------------------------------------------------------------------------
+// 支付 (Stripe, 担保交易 escrow 风格)
+// ---------------------------------------------------------------------------
+
+enum PaymentRelatedType {
+  TASK
+  BOOKING
+  CARPOOL_BOOKING
+}
+
+enum PaymentStatus {
+  PENDING
+  HELD
+  RELEASED
+  REFUNDED
+  FAILED
+}
+
+model Payment {
+  id                    String             @id @default(cuid())
+  payerId               String
+  payer                 User               @relation("PaymentsAsPayer", fields: [payerId], references: [id])
+  payeeId               String?
+  payee                 User?              @relation("PaymentsAsPayee", fields: [payeeId], references: [id])
+  relatedType           PaymentRelatedType
+  taskId                String?
+  task                  Task?              @relation("TaskPayments", fields: [taskId], references: [id])
+  bookingId             String?
+  booking               Booking?           @relation("BookingPayments", fields: [bookingId], references: [id])
+  carpoolBookingId      String?
+  carpoolBooking        CarpoolBooking?    @relation("CarpoolBookingPayments", fields: [carpoolBookingId], references: [id])
+  amount                Decimal            @db.Decimal(10, 2)
+  currency              String             @default("AUD")
+  status                PaymentStatus      @default(PENDING)
+  stripePaymentIntentId String?
+  // 释放(RELEASED)给收款人时的分账明细: 平台服务费 + 实际到账净额 + Stripe Connect 转账 ID
+  platformFeeAmount     Decimal?           @db.Decimal(10, 2)
+  netAmount             Decimal?           @db.Decimal(10, 2)
+  stripeTransferId      String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// 通知
+// ---------------------------------------------------------------------------
+
+enum NotificationType {
+  TASK_NEW_OFFER
+  TASK_ASSIGNED
+  TASK_STATUS_CHANGED
+  BOOKING_CONFIRMED
+  BOOKING_REMINDER
+  CARPOOL_BOOKED
+  CLASSIFIED_MESSAGE
+  NEW_MESSAGE
+  REVIEW_RECEIVED
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}

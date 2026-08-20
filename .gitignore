@@ -1,0 +1,43 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# builds
+dist/
+build/
+.next/
+out/
+.expo/
+.expo-shared/
+web-build/
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# os
+.DS_Store
+Thumbs.db
+
+# editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# prisma
+apps/api/generated/
+
+# 本地磁盘存储占位 (上传的图片/语音文件，后续换 S3/R2 后不再需要)
+apps/api/storage/
+
+# misc
+*.tsbuildinfo
+coverage/
+node-compile-cache/
