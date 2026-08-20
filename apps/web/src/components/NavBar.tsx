@@ -42,7 +42,9 @@ export function NavBar() {
           )}
           {!loading && user && (
             <div className="flex items-center gap-3">
-              <span className="text-sm text-neutral-600">{user.name}</span>
+              <Link href="/me" className="text-sm font-medium text-neutral-600 hover:text-neutral-900">
+                {user.name}
+              </Link>
               <button onClick={logout} className="btn-secondary text-sm">
                 退出
               </button>

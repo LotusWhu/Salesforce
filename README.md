@@ -86,7 +86,8 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 | `DATABASE_URL` | PostgreSQL 连接串 |
 | `JWT_SECRET` | JWT 签名密钥 |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` | 短信验证码发送 |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_OAUTH_REDIRECT_URL` | Google Calendar 授权，用于预约同步日程 |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_OAUTH_REDIRECT_URL` | Google Calendar 授权，用于预约同步日程；`GOOGLE_OAUTH_REDIRECT_URL` 需配置成 API 的 `/me/google-calendar/callback` |
+| `WEB_APP_URL` | 网页版地址，Google 授权完成后由 API 跳转回网页版 `/me` |
 | `STRIPE_SECRET_KEY` | 支付 / 服务费 / 担保交易 |
 | `NEXT_PUBLIC_API_URL` (web) / `EXPO_PUBLIC_API_URL` (mobile) | 前端指向后端 API 的地址 |
 
@@ -94,10 +95,13 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 
 - `apps/api/prisma/schema.prisma`：完整数据模型（User、Task/TaskOffer、ServiceListing/Booking、CarpoolTrip/CarpoolBooking/CarpoolRequest、ClassifiedListing、Review、Payment、Notification 等）。
 - `apps/api/src/carpool/carpool.service.ts`：拼车自动匹配 + 动态定价核心逻辑（`matchPendingRequestsToTrip` / `computePricePerSeat`）。
-- `apps/api/src/services/services.service.ts`：`getNextAvailable` 计算"即时/家政"服务的最早可预约时段。
+- `apps/api/src/services/services.service.ts`：`getNextAvailable` 计算支持"即时"下单服务的最早可预约时段。
+- `apps/api/src/users/users.controller.ts`：`me/google-calendar/callback` 是 Google OAuth 授权后浏览器直接跳转的公开回调（无需 JWT，身份靠 `state` 里的 userId 还原），完成后跳回网页版 `/me`。
 - `apps/api/src/{tasks,services,carpool,classifieds}`：四大业务模块的 NestJS Controller/Service/DTO。
 - `apps/web/src/app/{tasks,services,carpool,classifieds}`：网页版对应页面（列表/发布/详情）。
+- `apps/web/src/app/me`：个人中心（连接/断开 Google 日历）+ `me/schedule`（服务提供者预约日程，按日期分组，可标记完成/取消，供个体户如钢琴老师管理自己的预约）。
 - `apps/mobile/app/(tabs)/{tasks,services,carpool,classifieds}`：App 端对应页面，底部 Tab + 二级 Stack 导航。
+- `apps/mobile/app/(tabs)/profile`：`index.tsx` 个人中心（含 Google 日历连接入口），`schedule.tsx` 预约日程管理，与网页版逻辑对应。
 - `packages/shared-types`：三端共用类型，新增字段/枚举时优先在这里改，再同步各端使用处。
 
 ## 当前进度与后续规划

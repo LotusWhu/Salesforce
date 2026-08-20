@@ -1,5 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ConfigService } from "@nestjs/config";
+import { Response } from "express";
 import { User } from "@prisma/client";
 import { JwtAuthGuard } from "../auth/jwt-auth.guard";
 import { CurrentUser } from "../auth/current-user.decorator";
@@ -10,7 +12,10 @@ import { CreateReviewDto } from "./dto/create-review.dto";
 @ApiTags("users")
 @Controller()
 export class UsersController {
-  constructor(private readonly users: UsersService) {}
+  constructor(
+    private readonly users: UsersService,
+    private readonly config: ConfigService,
+  ) {}
 
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -57,6 +62,30 @@ export class UsersController {
   @Post("me/google-calendar/connect")
   connectGoogleCalendar(@CurrentUser() user: User, @Query("code") code: string) {
     return this.users.connectGoogleCalendar(user.id, code);
+  }
+
+  /**
+   * Google OAuth 授权后浏览器直接跳转到这里 (无 JWT 上下文)，
+   * 用户身份靠 getAuthUrl 时塞进 state 里的 userId 还原，
+   * 完成后跳回网页版个人中心 (GOOGLE_OAUTH_REDIRECT_URL 需配置成这个地址)。
+   */
+  @Get("me/google-calendar/callback")
+  async googleCalendarCallback(
+    @Query("code") code: string,
+    @Query("state") state: string,
+    @Query("error") error: string,
+    @Res() res: Response,
+  ) {
+    const webAppUrl = this.config.get<string>("WEB_APP_URL") ?? "http://localhost:3000";
+    if (error || !code || !state) {
+      return res.redirect(`${webAppUrl}/me?googleCalendar=error`);
+    }
+    try {
+      await this.users.connectGoogleCalendar(state, code);
+      return res.redirect(`${webAppUrl}/me?googleCalendar=connected`);
+    } catch {
+      return res.redirect(`${webAppUrl}/me?googleCalendar=error`);
+    }
   }
 
   @UseGuards(JwtAuthGuard)
