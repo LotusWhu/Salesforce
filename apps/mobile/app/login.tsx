@@ -4,11 +4,13 @@ import { StyleSheet, Text, View } from "react-native";
 import { OtpPurpose, RequestOtpResponse, VerifyOtpResponse } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
 
 export default function LoginScreen() {
   const router = useRouter();
   const { loginWithToken } = useAuth();
+  const { t } = useLocale();
   const [phone, setPhone] = useState("+61");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "code">("phone");
@@ -24,7 +26,7 @@ export default function LoginScreen() {
       setDebugCode(res.debugCode ?? null);
       setStep("code");
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "发送验证码失败，请稍后重试");
+      setError(e instanceof ApiError ? e.message : t("login.sendFailed"));
     } finally {
       setLoading(false);
     }
@@ -40,7 +42,7 @@ export default function LoginScreen() {
         router.back();
       }
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "验证码校验失败");
+      setError(e instanceof ApiError ? e.message : t("login.verifyFailed"));
     } finally {
       setLoading(false);
     }
@@ -49,7 +51,7 @@ export default function LoginScreen() {
   return (
     <View style={styles.screen}>
       <Card>
-        <Field label="手机号 (含国家代码，如 +61)">
+        <Field label={t("login.phoneLabel")}>
           <TextField
             value={phone}
             onChangeText={setPhone}
@@ -60,29 +62,33 @@ export default function LoginScreen() {
         </Field>
 
         {step === "code" && (
-          <Field label="验证码">
+          <Field label={t("login.codeLabel")}>
             <TextField
               value={code}
               onChangeText={setCode}
-              placeholder="6位数字验证码"
+              placeholder={t("login.codePlaceholder")}
               keyboardType="number-pad"
               maxLength={6}
             />
-            {debugCode && <Text style={styles.debug}>开发环境调试验证码: {debugCode}</Text>}
+            {debugCode && (
+              <Text style={styles.debug}>
+                {t("login.debugCode")}: {debugCode}
+              </Text>
+            )}
           </Field>
         )}
 
         <ErrorText>{error}</ErrorText>
 
         {step === "phone" ? (
-          <PrimaryButton title="获取验证码" onPress={requestOtp} disabled={!phone} loading={loading} />
+          <PrimaryButton title={t("login.sendCode")} onPress={requestOtp} disabled={!phone} loading={loading} />
         ) : (
           <View style={{ flexDirection: "row", gap: 8 }}>
             <View style={{ flex: 1 }}>
-              <SecondaryButton title="返回" onPress={() => setStep("phone")} disabled={loading} />
+              <SecondaryButton title={t("common.back")} onPress={() => setStep("phone")} disabled={loading} />
             </View>
             <View style={{ flex: 1 }}>
-              <PrimaryButton title="登录" onPress={verifyOtp} disabled={code.length !== 6} loading={loading} />
+              <PrimaryButton title={t("login.submit")} onPress={verifyOtp} disabled={code.length !== 6} loading={loading} />
             </View>
           </View>
         )}

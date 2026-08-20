@@ -169,9 +169,18 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 
 ⚠️ 这个仓库的开发沙箱网络策略屏蔽了 `exp.host`（Expo 推送服务器），所以沙箱里实际发出的推送请求会收到网络层拒绝——已经用真实多用户场景验证了"注册 token → 触发业务通知（如任务收到报价）→ `NotificationsService` 尝试推送并优雅失败但站内通知照常创建 → `/notifications` 正确返回未读数和内容 → 标记已读/全部已读 → 网页端点击通知正确跳转到对应任务详情页"这一整条链路，唯独真实的手机推送到达（Expo → APNs/FCM → 设备）这一段因沙箱网络限制无法在这里验证，用户自己的电脑/正式部署环境不受影响。
 
+## 多城市 / 多语言 (en/zh)
+
+两端都接了真正的中英文切换和城市筛选，不是占位开关：
+
+- **语言**：`packages/shared-types/src/i18n.ts` 是三端共用的字典（`translations.zh` / `translations.en`，命名空间化的 key，如 `tasks.publish`），`labels.ts` 把原来只有中文的枚举文案（任务分类、订单状态、服务分类等）也改成了 `Record<Locale, Record<EnumValue, string>>`。web `apps/web/src/lib/locale-context.tsx` 和 mobile `apps/mobile/src/lib/locale-context.tsx` 各自实现 `LocaleProvider` + `useLocale()`（`t()` 翻译函数、`locale`、`setLocale`），逻辑一致：默认中文优先，只有浏览器/设备语言明确是英文且用户从没手动选过时才默认英文；选择存 `localStorage`(web)/`AsyncStorage`(mobile)，登录用户额外同步一份到 `User.language`（`PATCH /me`），下次换设备登录也能带上偏好。web 导航栏、mobile 顶部标签栏 + "我的"页都有语言切换下拉。
+- **城市**：`SUPPORTED_CITIES`（悉尼/墨尔本/布里斯班/珀斯/阿德莱德/堪培拉/黄金海岸/霍巴特，Australia-first）同样定义在 `i18n.ts`。城市切换器和语言切换器放在一起（web 导航栏 / mobile 个人中心），选择同样存本地 + 同步 `User.city`。跑腿任务/上门服务/分类信息三个模块的列表页把当前选中城市自动接入已有的 `?city=` 查询参数（后端 `city` 过滤本来就支持，只是之前从没被前端调用过）；发布表单会把当前城市自动带入 `city` 字段（`Task` 模型原来漏了 `city` 字段没接到 `CreateTaskDto`，这次一并补上）。选"全部城市"就不带过滤参数，看到所有城市的内容。拼车模块本质是跨城市的点对点行程，城市切换器不影响它的浏览（`fromCity`/`toCity` 是行程自己的字段）。
+- **翻译范围**：导航栏/标签栏、首页、登录页、四大模块（跑腿任务/上门服务/拼车接送机/分类信息）各自的列表/发布/详情页、个人中心（含 Google 日历、Stripe Connect、预约日程、消息、通知、交易记录）全部走 `t()`，不是只翻了导航栏。没有覆盖到的是：后端校验/错误信息（比如 `class-validator` 报错文案）——这些还是中文，做完整后端 i18n 需要一整套单独的错误码/文案体系，超出这次前端多语言落地的范围；以及用户自己填写的内容（任务标题、留言等）——这些本来就不该被翻译。
+- 已用真实浏览器场景端到端验证：默认语言检测、点击切换英文后导航栏/页面内容立即变化、刷新页面后语言选择保持不变（`localStorage` 生效）、切换城市后任务列表只显示该城市的任务（用两条分别打了悉尼/墨尔本标签的真实任务数据验证）、`PATCH /me` 正确持久化 `language`/`city`。
+
 ## 当前进度与后续规划
 
-已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、担保交易(托管/释放/退款) + Stripe Connect 分账、List/Map 视图切换、图片上传、地址正向地理编码、站内公开留言(含语音)、推送通知(Expo Push + 站内通知中心)。后续可继续完善：
+已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、担保交易(托管/释放/退款) + Stripe Connect 分账、List/Map 视图切换、图片上传、地址正向地理编码、站内公开留言(含语音)、推送通知(Expo Push + 站内通知中心)、多城市/多语言(en/zh)切换。后续可继续完善：
 
 - 收银台前端 (Stripe Elements 卡片输入 UI)：担保交易的托管/释放/退款逻辑已经完整跑通并接了真实的 Stripe PaymentIntent/Transfer/Refund API，但目前还没有客户实际输入卡号完成扣款的收银台页面——`PaymentsService.holdForContext` 已经把 `client_secret` 准备好了，接一个 Stripe Elements 组件就能用
-- 多城市/多语言（en/zh）切换的完整落地
+- 后端错误/校验信息的国际化（目前后端返回的报错文案固定是中文）

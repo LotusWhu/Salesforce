@@ -1,17 +1,17 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { ConversationContextType, GeoPoint } from "@localhub/shared-types";
+import { CARPOOL_TYPE_LABELS, CarpoolType, ConversationContextType, GeoPoint } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
-import { CARPOOL_TYPE_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 import { Badge, Card, ErrorText, Field, PrimaryButton, SuccessText, TextField, colors } from "@/components/ui";
 import MessageThread from "@/components/MessageThread";
 
 interface TripDetail {
   id: string;
   driverId: string;
-  type: keyof typeof CARPOOL_TYPE_LABELS;
+  type: CarpoolType;
   origin: GeoPoint;
   destination: GeoPoint;
   departureTime: string;
@@ -30,6 +30,7 @@ export default function CarpoolTripDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const { t, locale } = useLocale();
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [seatsText, setSeatsText] = useState("1");
   const [busy, setBusy] = useState(false);
@@ -46,7 +47,7 @@ export default function CarpoolTripDetailScreen() {
   if (!trip) {
     return (
       <View style={styles.screen}>
-        <Text style={{ padding: 16 }}>加载中...</Text>
+        <Text style={{ padding: 16 }}>{t("common.loading")}</Text>
       </View>
     );
   }
@@ -60,10 +61,10 @@ export default function CarpoolTripDetailScreen() {
     setBusy(true);
     try {
       await api.post(`/carpool/trips/${id}/bookings`, { seats: Number(seatsText) || 1 });
-      setMessage("预订成功！");
+      setMessage(t("carpool.bookSuccess"));
       await load();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "预订失败");
+      setError(e instanceof ApiError ? e.message : t("carpool.bookFailed"));
     } finally {
       setBusy(false);
     }
@@ -72,53 +73,66 @@ export default function CarpoolTripDetailScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: 16, gap: 12 }}>
       <Card>
-        <Badge label={CARPOOL_TYPE_LABELS[trip.type]} />
+        <Badge label={CARPOOL_TYPE_LABELS[locale][trip.type]} />
         <Text style={styles.title}>
           {trip.origin.address} → {trip.destination.address}
         </Text>
-        <Text style={styles.meta}>出发时间: {new Date(trip.departureTime).toLocaleString()}</Text>
-        {trip.flightNumber && <Text style={styles.meta}>航班号: {trip.flightNumber}</Text>}
-        <Text style={styles.meta}>车主: {trip.driver.name}</Text>
         <Text style={styles.meta}>
-          价格: {trip.currency} {trip.pricePerSeat} / 座 · 剩余 {trip.seatsAvailable} / {trip.totalSeats} 座
+          {t("carpool.departureTime")}: {new Date(trip.departureTime).toLocaleString()}
         </Text>
-        {trip.notes && <Text style={styles.meta}>备注: {trip.notes}</Text>}
+        {trip.flightNumber && (
+          <Text style={styles.meta}>
+            {t("carpool.flightNumberColon")}: {trip.flightNumber}
+          </Text>
+        )}
+        <Text style={styles.meta}>
+          {t("carpool.driver")}: {trip.driver.name}
+        </Text>
+        <Text style={styles.meta}>
+          {t("carpool.price")}: {trip.currency} {trip.pricePerSeat} {t("carpool.perSeat")} · {t("carpool.remaining")}{" "}
+          {trip.seatsAvailable} / {trip.totalSeats} {t("carpool.seatsUnit")}
+        </Text>
+        {trip.notes && (
+          <Text style={styles.meta}>
+            {t("carpool.notes")}: {trip.notes}
+          </Text>
+        )}
       </Card>
 
       {!user && (
         <Card>
-          <Text>请先登录后再预订座位。</Text>
+          <Text>{t("carpool.loginToBookSeats")}</Text>
           <View style={{ height: 10 }} />
-          <PrimaryButton title="去登录" onPress={() => router.push("/login")} />
+          <PrimaryButton title={t("common.goLogin")} onPress={() => router.push("/login")} />
         </Card>
       )}
 
       {user && !isDriver && !myBooking && trip.status === "OPEN" && (
         <Card>
-          <Text style={styles.cardTitle}>预订座位</Text>
-          <Field label="座位数">
+          <Text style={styles.cardTitle}>{t("carpool.bookSeats")}</Text>
+          <Field label={t("carpool.seatCountLabel")}>
             <TextField keyboardType="numeric" value={seatsText} onChangeText={setSeatsText} />
           </Field>
           <ErrorText>{error}</ErrorText>
           <SuccessText>{message}</SuccessText>
-          <PrimaryButton title={`预订 ${seatsText} 个座位`} onPress={bookSeats} loading={busy} />
+          <PrimaryButton title={`${t("carpool.bookNSeats")} ${seatsText} ${t("carpool.seatsSuffix")}`} onPress={bookSeats} loading={busy} />
         </Card>
       )}
 
       {myBooking && (
         <Card>
           <Text>
-            你已预订 {myBooking.seats} 个座位，状态: {myBooking.status}
+            {t("carpool.youBooked")} {myBooking.seats} {t("carpool.seatsSuffix")}，{t("common.status")}: {myBooking.status}
           </Text>
         </Card>
       )}
 
       {isDriver && trip.bookings.length > 0 && (
         <Card>
-          <Text style={styles.cardTitle}>乘客列表</Text>
+          <Text style={styles.cardTitle}>{t("carpool.passengerList")}</Text>
           {trip.bookings.map((b) => (
             <Text key={b.id} style={styles.meta}>
-              {b.passenger.name} · {b.seats} 座 · {b.status}
+              {b.passenger.name} · {b.seats} {t("carpool.seatsUnit")} · {b.status}
             </Text>
           ))}
         </Card>

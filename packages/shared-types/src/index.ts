@@ -10,3 +10,5 @@ export * from "./payment";
 export * from "./notification";
 export * from "./upload";
 export * from "./geocode";
+export * from "./i18n";
+export * from "./labels";

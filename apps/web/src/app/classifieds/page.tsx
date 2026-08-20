@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ClassifiedCategory, ClassifiedListingDto, PaginatedResult } from "@localhub/shared-types";
+import { CLASSIFIED_CATEGORY_LABELS, ClassifiedCategory, ClassifiedListingDto, PaginatedResult } from "@localhub/shared-types";
 import { api, buildQuery } from "@/lib/api";
-import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
+import { useLocale } from "@/lib/locale-context";
 import DynamicMapView from "@/components/DynamicMapView";
 
 export default function ClassifiedsPage() {
+  const { t, locale, city } = useLocale();
   const [category, setCategory] = useState<ClassifiedCategory | "">("");
   const [keyword, setKeyword] = useState("");
   const [view, setView] = useState<"list" | "map">("list");
@@ -19,13 +20,13 @@ export default function ClassifiedsPage() {
     const timer = setTimeout(() => {
       api
         .get<PaginatedResult<ClassifiedListingDto>>(
-          `/classifieds${buildQuery({ category: category || undefined, keyword: keyword || undefined })}`,
+          `/classifieds${buildQuery({ category: category || undefined, keyword: keyword || undefined, city: city || undefined })}`,
         )
         .then(setData)
         .finally(() => setLoading(false));
     }, 300);
     return () => clearTimeout(timer);
-  }, [category, keyword]);
+  }, [category, keyword, city]);
 
   const markers = useMemo(
     () =>
@@ -36,24 +37,24 @@ export default function ClassifiedsPage() {
           lat: item.location!.lat,
           lng: item.location!.lng,
           title: item.title,
-          subtitle: item.price !== null && item.price !== undefined ? `${item.currency} ${item.price}` : "价格面议/免费",
+          subtitle: item.price !== null && item.price !== undefined ? `${item.currency} ${item.price}` : t("classifieds.priceNegotiable"),
           href: `/classifieds/${item.id}`,
         })),
-    [data],
+    [data, t],
   );
 
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">分类信息</h1>
+        <h1 className="text-xl font-bold">{t("nav.classifieds")}</h1>
         <Link href="/classifieds/new" className="btn-primary text-sm">
-          + 发布信息
+          + {t("classifieds.publish")}
         </Link>
       </div>
 
       <input
         className="input mb-4"
-        placeholder="搜索标题或描述..."
+        placeholder={t("classifieds.searchPlaceholder")}
         value={keyword}
         onChange={(e) => setKeyword(e.target.value)}
       />
@@ -64,9 +65,9 @@ export default function ClassifiedsPage() {
             className={`btn-secondary text-sm ${category === "" ? "border-brand-500 text-brand-600" : ""}`}
             onClick={() => setCategory("")}
           >
-            全部
+            {t("common.all")}
           </button>
-          {Object.entries(CLASSIFIED_CATEGORY_LABELS).map(([key, label]) => (
+          {Object.entries(CLASSIFIED_CATEGORY_LABELS[locale]).map(([key, label]) => (
             <button
               key={key}
               className={`btn-secondary text-sm ${category === key ? "border-brand-500 text-brand-600" : ""}`}
@@ -81,24 +82,24 @@ export default function ClassifiedsPage() {
             className={`rounded px-3 py-1 text-sm font-medium ${view === "list" ? "bg-brand-500 text-white" : "text-neutral-600"}`}
             onClick={() => setView("list")}
           >
-            列表
+            {t("common.listView")}
           </button>
           <button
             className={`rounded px-3 py-1 text-sm font-medium ${view === "map" ? "bg-brand-500 text-white" : "text-neutral-600"}`}
             onClick={() => setView("map")}
           >
-            地图
+            {t("common.mapView")}
           </button>
         </div>
       </div>
 
-      {loading && <p className="text-neutral-500">加载中...</p>}
-      {!loading && data?.items.length === 0 && <p className="text-neutral-500">暂无信息</p>}
+      {loading && <p className="text-neutral-500">{t("common.loading")}</p>}
+      {!loading && data?.items.length === 0 && <p className="text-neutral-500">{t("classifieds.noData")}</p>}
 
       {view === "map" && !loading && (
         <div className="mb-4">
           {markers.length === 0 ? (
-            <p className="text-sm text-neutral-500">当前筛选结果中没有带地图位置的信息</p>
+            <p className="text-sm text-neutral-500">{t("classifieds.noMapResults")}</p>
           ) : (
             <DynamicMapView markers={markers} zoom={11} />
           )}
@@ -110,12 +111,12 @@ export default function ClassifiedsPage() {
           {data?.items.map((item) => (
             <Link key={item.id} href={`/classifieds/${item.id}`} className="card hover:shadow-md transition-shadow">
               <span className="rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600">
-                {CLASSIFIED_CATEGORY_LABELS[item.category]}
+                {CLASSIFIED_CATEGORY_LABELS[locale][item.category]}
               </span>
               <h3 className="mt-1 font-semibold">{item.title}</h3>
               <p className="mt-1 line-clamp-2 text-sm text-neutral-600">{item.description}</p>
               <p className="mt-2 text-sm font-medium text-brand-600">
-                {item.price !== null && item.price !== undefined ? `${item.currency} ${item.price}` : "价格面议/免费"}
+                {item.price !== null && item.price !== undefined ? `${item.currency} ${item.price}` : t("classifieds.priceNegotiable")}
               </p>
             </Link>
           ))}

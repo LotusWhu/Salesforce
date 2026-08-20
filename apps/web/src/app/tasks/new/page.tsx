@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CreateTaskDto, TaskCategory, TaskDto } from "@localhub/shared-types";
+import { CreateTaskDto, TASK_CATEGORY_LABELS, TaskCategory, TaskDto } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
-import { TASK_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
 import ImageUploader from "@/components/ImageUploader";
 
 export default function NewTaskPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { t, locale, city } = useLocale();
   const [form, setForm] = useState<CreateTaskDto>({
     category: TaskCategory.BUY_TICKET,
     title: "",
@@ -27,9 +28,9 @@ export default function NewTaskPage() {
   if (!authLoading && !user) {
     return (
       <div className="card max-w-md">
-        <p>请先登录后再发布任务。</p>
+        <p>{t("tasks.loginToPublish")}</p>
         <a href="/login" className="btn-primary mt-3 inline-block text-sm">
-          去登录
+          {t("common.goLogin")}
         </a>
       </div>
     );
@@ -38,19 +39,20 @@ export default function NewTaskPage() {
   const submit = async () => {
     setError(null);
     if (!form.title || !form.description) {
-      setError("请填写标题和描述");
+      setError(t("tasks.fillTitleDesc"));
       return;
     }
     setSubmitting(true);
     try {
       const task = await api.post<TaskDto>("/tasks", {
         ...form,
+        city: city ?? undefined,
         location: location ? { lat: location.lat, lng: location.lng, address: location.address } : undefined,
         attachmentUrls,
       });
       router.push(`/tasks/${task.id}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "发布失败，请稍后重试");
+      setError(e instanceof ApiError ? e.message : t("tasks.publishFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -58,16 +60,16 @@ export default function NewTaskPage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="mb-4 text-xl font-bold">发布任务</h1>
+      <h1 className="mb-4 text-xl font-bold">{t("tasks.publish")}</h1>
       <div className="card space-y-4">
         <div>
-          <label className="label">任务分类</label>
+          <label className="label">{t("tasks.categoryLabel")}</label>
           <select
             className="input"
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value as TaskCategory })}
           >
-            {Object.entries(TASK_CATEGORY_LABELS).map(([key, label]) => (
+            {Object.entries(TASK_CATEGORY_LABELS[locale]).map(([key, label]) => (
               <option key={key} value={key}>
                 {label}
               </option>
@@ -76,20 +78,20 @@ export default function NewTaskPage() {
         </div>
 
         <div>
-          <label className="label">标题</label>
+          <label className="label">{t("tasks.titleLabel")}</label>
           <input
             className="input"
-            placeholder="例如：帮忙买两张周六晚场电影票"
+            placeholder={t("tasks.titlePlaceholder")}
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
         </div>
 
         <div>
-          <label className="label">详细描述</label>
+          <label className="label">{t("tasks.descLabel")}</label>
           <textarea
             className="input min-h-28"
-            placeholder="请详细描述任务要求，如电影名称/场次、看房地址、需要拍哪些角度的照片等"
+            placeholder={t("tasks.descPlaceholder")}
             value={form.description}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
           />
@@ -97,7 +99,7 @@ export default function NewTaskPage() {
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="label">预算下限 (AUD)</label>
+            <label className="label">{t("tasks.budgetMin")}</label>
             <input
               type="number"
               className="input"
@@ -106,7 +108,7 @@ export default function NewTaskPage() {
             />
           </div>
           <div className="flex-1">
-            <label className="label">预算上限 (AUD)</label>
+            <label className="label">{t("tasks.budgetMax")}</label>
             <input
               type="number"
               className="input"
@@ -117,7 +119,7 @@ export default function NewTaskPage() {
         </div>
 
         <div>
-          <label className="label">截止时间 (可选)</label>
+          <label className="label">{t("tasks.dueDate")}</label>
           <input
             type="datetime-local"
             className="input"
@@ -131,7 +133,7 @@ export default function NewTaskPage() {
             checked={form.isRemote}
             onChange={(e) => setForm({ ...form, isRemote: e.target.checked })}
           />
-          此任务无需上门 (如代买票、线上代办)
+          {t("tasks.isRemote")}
         </label>
 
         <label className="flex items-center gap-2 text-sm">
@@ -140,25 +142,25 @@ export default function NewTaskPage() {
             checked={form.isUrgent ?? false}
             onChange={(e) => setForm({ ...form, isUrgent: e.target.checked })}
           />
-          加急/即时任务 (希望尽快有人接单)
+          {t("tasks.isUrgentField")}
         </label>
 
         {!form.isRemote && (
           <div>
-            <label className="label">任务地点 (需上门时，在地图上标记位置)</label>
+            <label className="label">{t("tasks.locationLabel")}</label>
             <LocationPicker value={location} onChange={setLocation} />
           </div>
         )}
 
         <div>
-          <label className="label">参考图片 (可选，如票务链接截图、看房要求参考图)</label>
+          <label className="label">{t("tasks.attachmentsLabel")}</label>
           <ImageUploader urls={attachmentUrls} onChange={setAttachmentUrls} />
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button className="btn-primary w-full" onClick={submit} disabled={submitting}>
-          {submitting ? "发布中..." : "发布任务"}
+          {submitting ? t("tasks.publishing") : t("tasks.publish")}
         </button>
       </div>
     </div>

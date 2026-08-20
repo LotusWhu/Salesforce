@@ -4,20 +4,7 @@ import { useEffect, useState } from "react";
 import { PaymentDto } from "@localhub/shared-types";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "待处理",
-  HELD: "已托管(担保中)",
-  RELEASED: "已释放",
-  REFUNDED: "已退款",
-  FAILED: "失败",
-};
-
-const RELATED_LABELS: Record<string, string> = {
-  TASK: "跑腿任务",
-  BOOKING: "上门服务预约",
-  CARPOOL_BOOKING: "拼车",
-};
+import { useLocale } from "@/lib/locale-context";
 
 function statusColor(status: string) {
   if (status === "HELD") return "bg-amber-50 text-amber-600";
@@ -28,20 +15,35 @@ function statusColor(status: string) {
 
 export default function MyPaymentsPage() {
   const { user, loading } = useAuth();
+  const { t } = useLocale();
   const [payments, setPayments] = useState<PaymentDto[] | null>(null);
+
+  const STATUS_LABELS: Record<string, string> = {
+    PENDING: t("payments.pending"),
+    HELD: t("payments.heldFull"),
+    RELEASED: t("payments.released"),
+    REFUNDED: t("payments.refunded"),
+    FAILED: t("payments.failed"),
+  };
+
+  const RELATED_LABELS: Record<string, string> = {
+    TASK: t("payments.relatedTask"),
+    BOOKING: t("payments.relatedBooking"),
+    CARPOOL_BOOKING: t("payments.relatedCarpool"),
+  };
 
   useEffect(() => {
     if (user) api.get<PaymentDto[]>("/payments/mine").then(setPayments);
   }, [user]);
 
-  if (loading) return <p className="text-neutral-500">加载中...</p>;
+  if (loading) return <p className="text-neutral-500">{t("common.loading")}</p>;
 
   if (!user) {
     return (
       <div className="card max-w-md">
-        <p>请先登录。</p>
+        <p>{t("common.loginFirst")}</p>
         <a href="/login" className="btn-primary mt-3 inline-block text-sm">
-          去登录
+          {t("common.goLogin")}
         </a>
       </div>
     );
@@ -49,11 +51,11 @@ export default function MyPaymentsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-3">
-      <h1 className="text-xl font-bold">我的交易</h1>
-      <p className="text-sm text-neutral-500">担保交易记录：下单/接单时款项进入平台托管(HELD)，服务确认完成后释放(RELEASED)给对方，取消则退款(REFUNDED)</p>
+      <h1 className="text-xl font-bold">{t("payments.title")}</h1>
+      <p className="text-sm text-neutral-500">{t("payments.subtitle")}</p>
 
-      {payments === null && <p className="text-neutral-500">加载中...</p>}
-      {payments !== null && payments.length === 0 && <p className="text-neutral-500">暂无交易记录</p>}
+      {payments === null && <p className="text-neutral-500">{t("common.loading")}</p>}
+      {payments !== null && payments.length === 0 && <p className="text-neutral-500">{t("payments.empty")}</p>}
 
       {payments?.map((p) => (
         <div key={p.id} className="card">
@@ -70,7 +72,7 @@ export default function MyPaymentsPage() {
           </p>
           {p.status === "RELEASED" && p.platformFeeAmount != null && (
             <p className="mt-1 text-xs text-neutral-500">
-              平台服务费 {p.currency} {p.platformFeeAmount} · 净额 {p.currency} {p.netAmount}
+              {t("payments.platformFee")} {p.currency} {p.platformFeeAmount} · {t("payments.netAmount")} {p.currency} {p.netAmount}
             </p>
           )}
         </div>

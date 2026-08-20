@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { NotificationDto, PaginatedResult } from "@localhub/shared-types";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 
 function hrefFor(n: NotificationDto): string | null {
   const data = n.data ?? {};
@@ -19,6 +20,7 @@ function hrefFor(n: NotificationDto): string | null {
 
 export default function NotificationsPage() {
   const { user, loading } = useAuth();
+  const { t } = useLocale();
   const [result, setResult] = useState<PaginatedResult<NotificationDto> | null>(null);
 
   const load = () => {
@@ -30,14 +32,14 @@ export default function NotificationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  if (loading) return <p className="text-neutral-500">加载中...</p>;
+  if (loading) return <p className="text-neutral-500">{t("common.loading")}</p>;
 
   if (!user) {
     return (
       <div className="card max-w-md">
-        <p>请先登录。</p>
+        <p>{t("common.loginFirst")}</p>
         <a href="/login" className="btn-primary mt-3 inline-block text-sm">
-          去登录
+          {t("common.goLogin")}
         </a>
       </div>
     );
@@ -56,14 +58,14 @@ export default function NotificationsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-3">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">通知</h1>
+        <h1 className="text-xl font-bold">{t("notifications.title")}</h1>
         <button className="btn-secondary text-sm" onClick={markAllRead}>
-          全部标记已读
+          {t("notifications.markAllRead")}
         </button>
       </div>
 
-      {result === null && <p className="text-neutral-500">加载中...</p>}
-      {result !== null && result.items.length === 0 && <p className="text-neutral-500">暂无通知</p>}
+      {result === null && <p className="text-neutral-500">{t("common.loading")}</p>}
+      {result !== null && result.items.length === 0 && <p className="text-neutral-500">{t("notifications.empty")}</p>}
 
       {result?.items.map((n) => {
         const href = hrefFor(n);

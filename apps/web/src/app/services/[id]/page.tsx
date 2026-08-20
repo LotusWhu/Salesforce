@@ -2,10 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { BookingDto, ConversationContextType, NextAvailableSlotDto } from "@localhub/shared-types";
+import {
+  BookingDto,
+  ConversationContextType,
+  NextAvailableSlotDto,
+  SERVICE_CATEGORY_LABELS,
+  ServiceCategory,
+} from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
-import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 import PhotoGallery from "@/components/PhotoGallery";
 import MessageThread from "@/components/MessageThread";
 
@@ -20,7 +26,7 @@ function toLocalTimeInput(d: Date) {
 interface ServiceDetail {
   id: string;
   providerId: string;
-  category: keyof typeof SERVICE_CATEGORY_LABELS;
+  category: ServiceCategory;
   title: string;
   description: string;
   priceType: string;
@@ -34,11 +40,19 @@ interface ServiceDetail {
   availability: { dayOfWeek: number; startTime: string; endTime: string }[];
 }
 
-const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-
 export default function ServiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { t, locale } = useLocale();
+  const WEEKDAYS = [
+    t("services.weekdaySun"),
+    t("services.weekdayMon"),
+    t("services.weekdayTue"),
+    t("services.weekdayWed"),
+    t("services.weekdayThu"),
+    t("services.weekdayFri"),
+    t("services.weekdaySat"),
+  ];
   const [service, setService] = useState<ServiceDetail | null>(null);
   const [date, setDate] = useState("");
   const [startTime, setStartTime] = useState("10:00");
@@ -55,7 +69,9 @@ export default function ServiceDetailPage() {
     api.get<ServiceDetail>(`/services/${id}`).then(setService);
   }, [id]);
 
-  if (!service) return <p className="text-neutral-500">加载中...</p>;
+  if (!service) return <p className="text-neutral-500">{t("common.loading")}</p>;
+
+  const priceUnit = service.priceType === "HOURLY" ? t("services.perHour") : t("services.perSession");
 
   const quickBookEarliest = async () => {
     setError(null);
@@ -64,15 +80,15 @@ export default function ServiceDetailPage() {
     try {
       const next = await api.get<NextAvailableSlotDto | null>(`/services/${service.id}/next-available`);
       if (!next) {
-        setError("暂时没有可用时段，请手动选择日期时间");
+        setError(t("services.noSlotsAvailable"));
         return;
       }
       const start = new Date(next.scheduledStart);
       setDate(toLocalDateInput(start));
       setStartTime(toLocalTimeInput(start));
-      setMessage(`已为你自动选中最早可用时段: ${start.toLocaleString()}，请确认地址后提交预约`);
+      setMessage(`${t("services.quickBookPicked")}: ${start.toLocaleString()}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "获取最早可用时段失败");
+      setError(e instanceof ApiError ? e.message : t("services.fetchSlotFailed"));
     } finally {
       setQuickBooking(false);
     }
@@ -82,7 +98,7 @@ export default function ServiceDetailPage() {
     setError(null);
     setMessage(null);
     if (!date || !startTime) {
-      setError("请选择预约日期和时间");
+      setError(t("services.selectDateTime"));
       return;
     }
     setBusy(true);
@@ -97,9 +113,9 @@ export default function ServiceDetailPage() {
         notes: notes || undefined,
       });
       setBooking(created);
-      setMessage("预约已提交，验证码已发送至你的手机，请输入验证码确认预约");
+      setMessage(t("services.bookingSubmitted"));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "预约失败，请稍后重试");
+      setError(e instanceof ApiError ? e.message : t("services.bookingFailed"));
     } finally {
       setBusy(false);
     }
@@ -112,9 +128,9 @@ export default function ServiceDetailPage() {
     try {
       const confirmed = await api.post<BookingDto>(`/bookings/${booking.id}/confirm-otp`, { code: otpCode });
       setBooking(confirmed);
-      setMessage("预约已确认！已尝试同步到服务提供者的 Google 日历。");
+      setMessage(t("services.bookingConfirmed"));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "验证码校验失败");
+      setError(e instanceof ApiError ? e.message : t("services.otpFailed"));
     } finally {
       setBusy(false);
     }
@@ -124,18 +140,20 @@ export default function ServiceDetailPage() {
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="card">
         <span className="rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600">
-          {SERVICE_CATEGORY_LABELS[service.category]}
+          {SERVICE_CATEGORY_LABELS[locale][service.category]}
         </span>
         <h1 className="mt-2 text-xl font-bold">{service.title}</h1>
         <p className="mt-2 whitespace-pre-wrap text-neutral-700">{service.description}</p>
         <p className="mt-2 text-sm font-medium text-brand-600">
-          {service.currency} {service.price} {service.priceType === "HOURLY" ? "/ 小时" : "/ 次"} · 约
-          {service.durationMinutes}分钟
+          {service.currency} {service.price} {priceUnit} · {t("services.aboutMinutes")}
+          {service.durationMinutes} {t("services.minutes")}
         </p>
-        <p className="mt-1 text-sm text-neutral-500">服务者: {service.provider.name} · 服务区域: {service.serviceArea ?? "-"}</p>
+        <p className="mt-1 text-sm text-neutral-500">
+          {t("services.provider")}: {service.provider.name} · {t("services.serviceArea")}: {service.serviceArea ?? "-"}
+        </p>
         {service.availability.length > 0 && (
           <p className="mt-1 text-sm text-neutral-500">
-            可预约: {service.availability.map((a) => `${WEEKDAYS[a.dayOfWeek]} ${a.startTime}-${a.endTime}`).join("; ")}
+            {t("services.availableTimes")}: {service.availability.map((a) => `${WEEKDAYS[a.dayOfWeek]} ${a.startTime}-${a.endTime}`).join("; ")}
           </p>
         )}
         <PhotoGallery urls={service.photos} />
@@ -143,9 +161,9 @@ export default function ServiceDetailPage() {
 
       {!user && (
         <div className="card">
-          <p>请先登录后再预约。</p>
+          <p>{t("services.loginToBook")}</p>
           <a href="/login" className="btn-primary mt-3 inline-block text-sm">
-            去登录
+            {t("common.goLogin")}
           </a>
         </div>
       )}
@@ -154,11 +172,11 @@ export default function ServiceDetailPage() {
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-semibold">支持即时下单</h2>
-              <p className="text-sm text-neutral-500">一键选中最早可用时段，确认地址即可提交</p>
+              <h2 className="font-semibold">{t("services.instantSupport")}</h2>
+              <p className="text-sm text-neutral-500">{t("services.instantSupportDesc")}</p>
             </div>
             <button className="btn-secondary text-sm" disabled={quickBooking} onClick={quickBookEarliest}>
-              {quickBooking ? "查找中..." : "立即预约(最早可用)"}
+              {quickBooking ? t("services.searching") : t("services.bookNowEarliest")}
             </button>
           </div>
         </div>
@@ -166,7 +184,7 @@ export default function ServiceDetailPage() {
 
       {user && !booking && (
         <div className="card space-y-3">
-          <h2 className="font-semibold">预约此服务</h2>
+          <h2 className="font-semibold">{t("services.bookThisService")}</h2>
           {message && <p className="text-sm text-green-600">{message}</p>}
           <div className="flex gap-3">
             <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -174,44 +192,44 @@ export default function ServiceDetailPage() {
           </div>
           <input
             className="input"
-            placeholder="服务地址"
+            placeholder={t("services.addressLabel")}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
           />
           <textarea
             className="input"
-            placeholder="备注 (可选)"
+            placeholder={t("services.notesLabel")}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
           />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button className="btn-primary w-full" disabled={busy} onClick={createBooking}>
-            {busy ? "提交中..." : "提交预约"}
+            {busy ? t("services.submitting") : t("services.submitBooking")}
           </button>
         </div>
       )}
 
       {booking && booking.status === "PENDING_CONFIRMATION" && (
         <div className="card space-y-3">
-          <h2 className="font-semibold">输入短信验证码确认预约</h2>
+          <h2 className="font-semibold">{t("services.enterOtpTitle")}</h2>
           {message && <p className="text-sm text-green-600">{message}</p>}
           <input
             className="input"
-            placeholder="6位验证码"
+            placeholder={t("services.otpPlaceholder")}
             maxLength={6}
             value={otpCode}
             onChange={(e) => setOtpCode(e.target.value)}
           />
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button className="btn-primary w-full" disabled={busy || otpCode.length !== 6} onClick={confirmOtp}>
-            确认预约
+            {t("services.confirmBooking")}
           </button>
         </div>
       )}
 
       {booking && booking.status === "CONFIRMED" && (
         <div className="card">
-          <p className="text-green-600">{message ?? "预约已确认"}</p>
+          <p className="text-green-600">{message ?? t("services.bookingConfirmedFallback")}</p>
         </div>
       )}
 

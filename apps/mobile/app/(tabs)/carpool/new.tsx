@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { CarpoolTripDto, CarpoolType } from "@localhub/shared-types";
+import { CARPOOL_TYPE_LABELS, CarpoolTripDto, CarpoolType } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
-import { CARPOOL_TYPE_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
 
 export default function NewCarpoolTripScreen() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { t, locale, city: globalCity } = useLocale();
   const [type, setType] = useState<CarpoolType>(CarpoolType.AIRPORT_PICKUP);
   const [originAddress, setOriginAddress] = useState("");
   const [destinationAddress, setDestinationAddress] = useState("");
@@ -18,7 +19,7 @@ export default function NewCarpoolTripScreen() {
   const [flightNumber, setFlightNumber] = useState("");
   const [totalSeats, setTotalSeats] = useState("3");
   const [pricePerSeat, setPricePerSeat] = useState("20");
-  const [city, setCity] = useState("");
+  const [city, setCity] = useState(globalCity ?? "");
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,9 +28,9 @@ export default function NewCarpoolTripScreen() {
     return (
       <View style={styles.screen}>
         <Card>
-          <Text>请先登录后再发布行程。</Text>
+          <Text>{t("carpool.loginToPublish")}</Text>
           <View style={{ height: 10 }} />
-          <PrimaryButton title="去登录" onPress={() => router.push("/login")} />
+          <PrimaryButton title={t("common.goLogin")} onPress={() => router.push("/login")} />
         </Card>
       </View>
     );
@@ -38,7 +39,7 @@ export default function NewCarpoolTripScreen() {
   const submit = async () => {
     setError(null);
     if (!originAddress || !destinationAddress || !departureDate || !departureTime) {
-      setError("请填写出发地、目的地和出发时间");
+      setError(t("carpool.fillOriginDest"));
       return;
     }
     setSubmitting(true);
@@ -56,7 +57,7 @@ export default function NewCarpoolTripScreen() {
       });
       router.replace(`/carpool/${trip.id}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "发布失败，请稍后重试");
+      setError(e instanceof ApiError ? e.message : t("carpool.publishFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -65,65 +66,65 @@ export default function NewCarpoolTripScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: 16 }}>
       <Card>
-        <Field label="类型">
+        <Field label={t("carpool.typeLabel")}>
           <View style={{ flexDirection: "row", gap: 8 }}>
-            {Object.entries(CARPOOL_TYPE_LABELS).map(([key, label]) => (
+            {Object.entries(CARPOOL_TYPE_LABELS[locale]).map(([key, label]) => (
               <SecondaryButton key={key} title={label} active={type === key} onPress={() => setType(key as CarpoolType)} />
             ))}
           </View>
         </Field>
 
-        <Field label="出发地">
-          <TextField placeholder="例如：悉尼国际机场 T1" value={originAddress} onChangeText={setOriginAddress} />
+        <Field label={t("carpool.originLabel")}>
+          <TextField placeholder={t("carpool.originPlaceholder")} value={originAddress} onChangeText={setOriginAddress} />
         </Field>
 
-        <Field label="目的地">
-          <TextField placeholder="例如：Chatswood" value={destinationAddress} onChangeText={setDestinationAddress} />
+        <Field label={t("carpool.destinationLabel")}>
+          <TextField placeholder={t("carpool.destinationPlaceholder")} value={destinationAddress} onChangeText={setDestinationAddress} />
         </Field>
 
         <View style={{ flexDirection: "row", gap: 10 }}>
           <View style={{ flex: 1 }}>
-            <Field label="出发日期 (YYYY-MM-DD)">
+            <Field label={t("carpool.departureDateYMD")}>
               <TextField placeholder="2026-08-20" value={departureDate} onChangeText={setDepartureDate} />
             </Field>
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="出发时间 (HH:mm)">
+            <Field label={t("carpool.departureTimeHHmm")}>
               <TextField placeholder="14:30" value={departureTime} onChangeText={setDepartureTime} />
             </Field>
           </View>
         </View>
 
         {type !== "CITY_RIDE" && (
-          <Field label="航班号 (可选)">
-            <TextField placeholder="例如：CZ321" value={flightNumber} onChangeText={setFlightNumber} />
+          <Field label={t("carpool.flightNumberLabel")}>
+            <TextField placeholder={t("carpool.flightNumberHintPlaceholder")} value={flightNumber} onChangeText={setFlightNumber} />
           </Field>
         )}
 
         <View style={{ flexDirection: "row", gap: 10 }}>
           <View style={{ flex: 1 }}>
-            <Field label="可拼座位数">
+            <Field label={t("carpool.availableSeats")}>
               <TextField keyboardType="numeric" value={totalSeats} onChangeText={setTotalSeats} />
             </Field>
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="每座价格 (AUD)">
+            <Field label={t("carpool.pricePerSeat")}>
               <TextField keyboardType="numeric" value={pricePerSeat} onChangeText={setPricePerSeat} />
             </Field>
           </View>
         </View>
 
-        <Field label="城市">
+        <Field label={t("carpool.cityLabel")}>
           <TextField value={city} onChangeText={setCity} />
         </Field>
 
-        <Field label="备注 (可选)">
+        <Field label={t("carpool.notesLabel")}>
           <TextField value={notes} onChangeText={setNotes} />
         </Field>
 
         <ErrorText>{error}</ErrorText>
 
-        <PrimaryButton title="发布行程" onPress={submit} loading={submitting} />
+        <PrimaryButton title={t("carpool.publish")} onPress={submit} loading={submitting} />
       </Card>
     </ScrollView>
   );

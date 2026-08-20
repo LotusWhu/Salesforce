@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { PropsWithChildren } from "react";
 import { AuthProvider } from "@/lib/auth-context";
+import { LocaleProvider } from "@/lib/locale-context";
 import { NavBar } from "@/components/NavBar";
 import "./globals.css";
 
@@ -14,8 +15,10 @@ export default function RootLayout({ children }: PropsWithChildren) {
     <html lang="zh">
       <body>
         <AuthProvider>
-          <NavBar />
-          <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+          <LocaleProvider>
+            <NavBar />
+            <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+          </LocaleProvider>
         </AuthProvider>
       </body>
     </html>

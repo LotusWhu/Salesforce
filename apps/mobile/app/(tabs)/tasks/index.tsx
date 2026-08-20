@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { FlatList, StyleSheet, Switch, Text, View } from "react-native";
-import { PaginatedResult, TaskCategory, TaskDto } from "@localhub/shared-types";
+import { PaginatedResult, TASK_CATEGORY_LABELS, TASK_STATUS_LABELS, TaskCategory, TaskDto } from "@localhub/shared-types";
 import { api, buildQuery } from "@/lib/api";
-import { TASK_CATEGORY_LABELS, TASK_STATUS_LABELS } from "@/lib/labels";
+import { useLocale } from "@/lib/locale-context";
 import { Badge, Card, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
 import MapView from "@/components/MapView";
 import { Pressable } from "react-native";
 
 export default function TasksListScreen() {
   const router = useRouter();
+  const { t, locale, city } = useLocale();
   const [category, setCategory] = useState<TaskCategory | "">("");
   const [urgentOnly, setUrgentOnly] = useState(false);
   const [keyword, setKeyword] = useState("");
@@ -22,13 +23,18 @@ export default function TasksListScreen() {
     const timer = setTimeout(() => {
       api
         .get<PaginatedResult<TaskDto>>(
-          `/tasks${buildQuery({ category: category || undefined, urgentOnly: urgentOnly || undefined, keyword: keyword || undefined })}`,
+          `/tasks${buildQuery({
+            category: category || undefined,
+            urgentOnly: urgentOnly || undefined,
+            keyword: keyword || undefined,
+            city: city || undefined,
+          })}`,
         )
         .then(setData)
         .finally(() => setLoading(false));
     }, 300);
     return () => clearTimeout(timer);
-  }, [category, urgentOnly, keyword]);
+  }, [category, urgentOnly, keyword, city]);
 
   const markers = useMemo(
     () =>
@@ -39,31 +45,31 @@ export default function TasksListScreen() {
           lat: task.location!.lat,
           lng: task.location!.lng,
           title: task.title,
-          subtitle: `预算 ${task.currency} ${task.budgetMin ?? "-"} ~ ${task.budgetMax ?? "-"}`,
+          subtitle: `${t("tasks.budget")} ${task.currency} ${task.budgetMin ?? "-"} ~ ${task.budgetMax ?? "-"}`,
         })),
-    [data],
+    [data, t],
   );
 
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <PrimaryButton title="+ 发布任务" onPress={() => router.push("/tasks/new")} />
+        <PrimaryButton title={`+ ${t("tasks.publish")}`} onPress={() => router.push("/tasks/new")} />
       </View>
 
       <View style={styles.filterRow}>
         <Switch value={urgentOnly} onValueChange={setUrgentOnly} />
-        <Text style={styles.filterLabel}>只看加急/即时任务</Text>
+        <Text style={styles.filterLabel}>{t("tasks.urgentOnly")}</Text>
       </View>
 
       <View style={styles.viewToggle}>
-        <SecondaryButton title="列表" active={view === "list"} onPress={() => setView("list")} />
-        <SecondaryButton title="地图" active={view === "map"} onPress={() => setView("map")} />
+        <SecondaryButton title={t("common.listView")} active={view === "list"} onPress={() => setView("list")} />
+        <SecondaryButton title={t("common.mapView")} active={view === "map"} onPress={() => setView("map")} />
       </View>
 
       {view === "map" ? (
         <View style={{ padding: 16, paddingTop: 8, flex: 1 }}>
           {markers.length === 0 ? (
-            <Text style={styles.empty}>当前筛选结果中没有带地图位置的任务</Text>
+            <Text style={styles.empty}>{t("tasks.noMapResults")}</Text>
           ) : (
             <MapView markers={markers} zoom={11} height={480} onMarkerPress={(id) => router.push(`/tasks/${id}`)} />
           )}
@@ -75,12 +81,17 @@ export default function TasksListScreen() {
           keyExtractor={(item) => item.id}
           ListHeaderComponent={
             <View>
-              <TextField placeholder="搜索任务标题或描述..." value={keyword} onChangeText={setKeyword} style={{ marginBottom: 10 }} />
+              <TextField
+                placeholder={t("tasks.searchPlaceholder")}
+                value={keyword}
+                onChangeText={setKeyword}
+                style={{ marginBottom: 10 }}
+              />
               <FlatList
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={{ marginBottom: 12 }}
-                data={[["", "全部"], ...Object.entries(TASK_CATEGORY_LABELS)]}
+                data={[["", t("common.all")], ...Object.entries(TASK_CATEGORY_LABELS[locale])]}
                 keyExtractor={([key]) => key}
                 renderItem={({ item: [key, label] }) => (
                   <View style={{ marginRight: 8 }}>
@@ -94,13 +105,13 @@ export default function TasksListScreen() {
               />
             </View>
           }
-          ListEmptyComponent={!loading ? <Text style={styles.empty}>暂无任务，快来发布第一个吧</Text> : null}
+          ListEmptyComponent={!loading ? <Text style={styles.empty}>{t("tasks.noData")}</Text> : null}
           renderItem={({ item }) => (
             <Pressable onPress={() => router.push(`/tasks/${item.id}`)}>
               <Card>
                 <View style={{ flexDirection: "row", gap: 6 }}>
-                  <Badge label={TASK_CATEGORY_LABELS[item.category]} />
-                  {item.isUrgent && <Badge label="加急" />}
+                  <Badge label={TASK_CATEGORY_LABELS[locale][item.category]} />
+                  {item.isUrgent && <Badge label={t("tasks.urgentBadge")} />}
                 </View>
                 <Text style={styles.title}>{item.title}</Text>
                 <Text style={styles.desc} numberOfLines={2}>
@@ -108,9 +119,9 @@ export default function TasksListScreen() {
                 </Text>
                 <View style={styles.row}>
                   <Text style={styles.meta}>
-                    预算 {item.currency} {item.budgetMin ?? "-"} ~ {item.budgetMax ?? "-"}
+                    {t("tasks.budget")} {item.currency} {item.budgetMin ?? "-"} ~ {item.budgetMax ?? "-"}
                   </Text>
-                  <Text style={styles.status}>{TASK_STATUS_LABELS[item.status]}</Text>
+                  <Text style={styles.status}>{TASK_STATUS_LABELS[locale][item.status]}</Text>
                 </View>
               </Card>
             </Pressable>

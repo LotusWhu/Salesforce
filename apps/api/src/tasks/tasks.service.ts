@@ -28,6 +28,7 @@ export class TasksService {
         budgetMin: dto.budgetMin,
         budgetMax: dto.budgetMax,
         currency: dto.currency ?? "AUD",
+        city: dto.city,
         locationLat: dto.location?.lat,
         locationLng: dto.location?.lng,
         locationAddress: dto.location?.address,

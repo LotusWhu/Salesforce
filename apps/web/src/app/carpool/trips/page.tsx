@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CarpoolTripDto, CarpoolType, PaginatedResult } from "@localhub/shared-types";
+import { CARPOOL_TYPE_LABELS, CarpoolTripDto, CarpoolType, PaginatedResult } from "@localhub/shared-types";
 import { api, buildQuery } from "@/lib/api";
-import { CARPOOL_TYPE_LABELS } from "@/lib/labels";
+import { useLocale } from "@/lib/locale-context";
 
 export default function CarpoolTripsPage() {
+  const { t, locale } = useLocale();
   const [type, setType] = useState<CarpoolType | "">("");
   const [data, setData] = useState<PaginatedResult<CarpoolTripDto> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -24,12 +25,12 @@ export default function CarpoolTripsPage() {
       <div className="mb-4 flex items-center justify-between">
         <div>
           <Link href="/carpool" className="text-sm text-brand-600 hover:underline">
-            ← 返回预订接送机
+            {t("carpool.backToBooking")}
           </Link>
-          <h1 className="mt-1 text-xl font-bold">浏览已发布行程</h1>
+          <h1 className="mt-1 text-xl font-bold">{t("carpool.browseTripsTitle")}</h1>
         </div>
         <Link href="/carpool/new" className="btn-primary text-sm">
-          + 我是车主，发布行程
+          {t("carpool.imDriverPublish")}
         </Link>
       </div>
 
@@ -38,9 +39,9 @@ export default function CarpoolTripsPage() {
           className={`btn-secondary text-sm ${type === "" ? "border-brand-500 text-brand-600" : ""}`}
           onClick={() => setType("")}
         >
-          全部
+          {t("common.all")}
         </button>
-        {Object.entries(CARPOOL_TYPE_LABELS).map(([key, label]) => (
+        {Object.entries(CARPOOL_TYPE_LABELS[locale]).map(([key, label]) => (
           <button
             key={key}
             className={`btn-secondary text-sm ${type === key ? "border-brand-500 text-brand-600" : ""}`}
@@ -51,8 +52,8 @@ export default function CarpoolTripsPage() {
         ))}
       </div>
 
-      {loading && <p className="text-neutral-500">加载中...</p>}
-      {!loading && data?.items.length === 0 && <p className="text-neutral-500">暂无行程，快来发布第一个吧</p>}
+      {loading && <p className="text-neutral-500">{t("common.loading")}</p>}
+      {!loading && data?.items.length === 0 && <p className="text-neutral-500">{t("carpool.noTrips")}</p>}
 
       <div className="grid gap-3">
         {data?.items.map((trip) => (
@@ -60,21 +61,23 @@ export default function CarpoolTripsPage() {
             <div className="flex items-start justify-between">
               <div>
                 <span className="rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600">
-                  {CARPOOL_TYPE_LABELS[trip.type]}
+                  {CARPOOL_TYPE_LABELS[locale][trip.type]}
                 </span>
                 <h3 className="mt-1 font-semibold">
                   {trip.origin.address} → {trip.destination.address}
                 </h3>
                 <p className="mt-1 text-sm text-neutral-600">
-                  出发时间: {new Date(trip.departureTime).toLocaleString()}
-                  {trip.flightNumber ? ` · 航班 ${trip.flightNumber}` : ""}
+                  {t("carpool.departureTime")}: {new Date(trip.departureTime).toLocaleString()}
+                  {trip.flightNumber ? ` · ${t("carpool.flightPrefix")} ${trip.flightNumber}` : ""}
                 </p>
               </div>
               <span className="whitespace-nowrap text-sm font-medium text-brand-600">
-                {trip.currency} {trip.pricePerSeat}/座
+                {trip.currency} {trip.pricePerSeat}{t("carpool.perSeat")}
               </span>
             </div>
-            <p className="mt-2 text-sm text-neutral-500">剩余座位: {trip.seatsAvailable} / {trip.totalSeats}</p>
+            <p className="mt-2 text-sm text-neutral-500">
+              {t("carpool.seatsRemaining")}: {trip.seatsAvailable} / {trip.totalSeats}
+            </p>
           </Link>
         ))}
       </div>

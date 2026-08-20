@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { ClassifiedListingDto, ConversationContextType } from "@localhub/shared-types";
+import { CLASSIFIED_CATEGORY_LABELS, ClassifiedListingDto, ConversationContextType } from "@localhub/shared-types";
 import { api } from "@/lib/api";
-import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
+import { useLocale } from "@/lib/locale-context";
 import { Badge, Card, colors } from "@/components/ui";
 import PhotoGallery from "@/components/PhotoGallery";
 import MessageThread from "@/components/MessageThread";
 
 export default function ClassifiedDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { t, locale } = useLocale();
   const [item, setItem] = useState<(ClassifiedListingDto & { poster: { name: string } }) | null>(null);
 
   useEffect(() => {
@@ -19,7 +20,7 @@ export default function ClassifiedDetailScreen() {
   if (!item) {
     return (
       <View style={styles.screen}>
-        <Text style={{ padding: 16 }}>加载中...</Text>
+        <Text style={{ padding: 16 }}>{t("common.loading")}</Text>
       </View>
     );
   }
@@ -27,14 +28,14 @@ export default function ClassifiedDetailScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: 16 }}>
       <Card>
-        <Badge label={CLASSIFIED_CATEGORY_LABELS[item.category]} />
+        <Badge label={CLASSIFIED_CATEGORY_LABELS[locale][item.category]} />
         <Text style={styles.title}>{item.title}</Text>
         <Text style={styles.desc}>{item.description}</Text>
         <Text style={styles.price}>
-          {item.price !== null && item.price !== undefined ? `${item.currency} ${item.price}` : "价格面议/免费"}
+          {item.price !== null && item.price !== undefined ? `${item.currency} ${item.price}` : t("classifieds.priceNegotiable")}
         </Text>
         <Text style={styles.meta}>
-          发布者: {item.poster.name} · 浏览量: {item.viewCount}
+          {t("classifieds.poster")}: {item.poster.name} · {t("classifieds.views")}: {item.viewCount}
         </Text>
         <PhotoGallery urls={item.photos} />
       </Card>

@@ -2,24 +2,26 @@ import { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 import { PaymentDto } from "@localhub/shared-types";
 import { api } from "@/lib/api";
+import { useLocale } from "@/lib/locale-context";
 import { Card, colors } from "@/components/ui";
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "待处理",
-  HELD: "已托管(担保中)",
-  RELEASED: "已释放",
-  REFUNDED: "已退款",
-  FAILED: "失败",
-};
-
-const RELATED_LABELS: Record<string, string> = {
-  TASK: "跑腿任务",
-  BOOKING: "上门服务预约",
-  CARPOOL_BOOKING: "拼车",
-};
-
 export default function MyPaymentsScreen() {
+  const { t } = useLocale();
   const [payments, setPayments] = useState<PaymentDto[] | null>(null);
+
+  const STATUS_LABELS: Record<string, string> = {
+    PENDING: t("payments.pending"),
+    HELD: t("payments.heldFull"),
+    RELEASED: t("payments.released"),
+    REFUNDED: t("payments.refunded"),
+    FAILED: t("payments.failed"),
+  };
+
+  const RELATED_LABELS: Record<string, string> = {
+    TASK: t("payments.relatedTask"),
+    BOOKING: t("payments.relatedBooking"),
+    CARPOOL_BOOKING: t("payments.relatedCarpool"),
+  };
 
   useEffect(() => {
     api.get<PaymentDto[]>("/payments/mine").then(setPayments);
@@ -31,7 +33,7 @@ export default function MyPaymentsScreen() {
         contentContainerStyle={{ padding: 16, gap: 10 }}
         data={payments ?? []}
         keyExtractor={(p) => p.id}
-        ListEmptyComponent={payments !== null ? <Text style={styles.empty}>暂无交易记录</Text> : null}
+        ListEmptyComponent={payments !== null ? <Text style={styles.empty}>{t("payments.empty")}</Text> : null}
         renderItem={({ item }) => (
           <Card>
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
@@ -43,7 +45,8 @@ export default function MyPaymentsScreen() {
             </Text>
             {item.status === "RELEASED" && item.platformFeeAmount != null && (
               <Text style={styles.meta}>
-                平台服务费 {item.currency} {item.platformFeeAmount} · 净额 {item.currency} {item.netAmount}
+                {t("payments.platformFee")} {item.currency} {item.platformFeeAmount} · {t("payments.netAmount")} {item.currency}{" "}
+                {item.netAmount}
               </Text>
             )}
           </Card>

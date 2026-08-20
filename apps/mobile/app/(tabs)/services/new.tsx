@@ -1,19 +1,33 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { CreateServiceListingDto, PriceType, ServiceCategory, ServiceListingDto } from "@localhub/shared-types";
+import {
+  CreateServiceListingDto,
+  PriceType,
+  SERVICE_CATEGORY_LABELS,
+  ServiceCategory,
+  ServiceListingDto,
+} from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
-import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
 import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
 import ImageUploader from "@/components/ImageUploader";
 
-const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
-
 export default function NewServiceScreen() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { t, locale, city } = useLocale();
+  const WEEKDAYS = [
+    t("services.weekdaySun"),
+    t("services.weekdayMon"),
+    t("services.weekdayTue"),
+    t("services.weekdayWed"),
+    t("services.weekdayThu"),
+    t("services.weekdayFri"),
+    t("services.weekdaySat"),
+  ];
   const [form, setForm] = useState<CreateServiceListingDto>({
     category: ServiceCategory.HOUSE_CLEANING,
     title: "",
@@ -22,6 +36,7 @@ export default function NewServiceScreen() {
     price: 0,
     currency: "AUD",
     durationMinutes: 60,
+    city: city ?? undefined,
   });
   const [location, setLocation] = useState<PickedLocation | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
@@ -37,9 +52,9 @@ export default function NewServiceScreen() {
     return (
       <View style={styles.screen}>
         <Card>
-          <Text>请先登录后再发布服务。</Text>
+          <Text>{t("services.loginToPublish")}</Text>
           <View style={{ height: 10 }} />
-          <PrimaryButton title="去登录" onPress={() => router.push("/login")} />
+          <PrimaryButton title={t("common.goLogin")} onPress={() => router.push("/login")} />
         </Card>
       </View>
     );
@@ -49,7 +64,7 @@ export default function NewServiceScreen() {
     setError(null);
     const price = Number(priceText);
     if (!form.title || !form.description || !price) {
-      setError("请填写标题、描述和价格");
+      setError(t("services.fillRequired"));
       return;
     }
     setSubmitting(true);
@@ -69,7 +84,7 @@ export default function NewServiceScreen() {
       }
       router.replace(`/services/${listing.id}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "发布失败，请稍后重试");
+      setError(e instanceof ApiError ? e.message : t("services.publishFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -78,9 +93,9 @@ export default function NewServiceScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: 16 }}>
       <Card>
-        <Field label="服务分类">
+        <Field label={t("services.categoryLabel")}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {Object.entries(SERVICE_CATEGORY_LABELS).map(([key, label]) => (
+            {Object.entries(SERVICE_CATEGORY_LABELS[locale]).map(([key, label]) => (
               <SecondaryButton
                 key={key}
                 title={label}
@@ -91,11 +106,11 @@ export default function NewServiceScreen() {
           </View>
         </Field>
 
-        <Field label="标题">
+        <Field label={t("services.titleLabel")}>
           <TextField value={form.title} onChangeText={(v) => setForm({ ...form, title: v })} />
         </Field>
 
-        <Field label="详细描述">
+        <Field label={t("services.descLabel")}>
           <TextField
             style={{ minHeight: 80 }}
             multiline
@@ -106,15 +121,15 @@ export default function NewServiceScreen() {
 
         <View style={{ flexDirection: "row", gap: 10 }}>
           <View style={{ flex: 1 }}>
-            <Field label="计价方式">
+            <Field label={t("services.priceTypeLabel")}>
               <View style={{ flexDirection: "row", gap: 8 }}>
                 <SecondaryButton
-                  title="一次性"
+                  title={t("services.priceTypeFixedShort")}
                   active={form.priceType === PriceType.FIXED}
                   onPress={() => setForm({ ...form, priceType: PriceType.FIXED })}
                 />
                 <SecondaryButton
-                  title="按小时"
+                  title={t("services.priceTypeHourlyShort")}
                   active={form.priceType === PriceType.HOURLY}
                   onPress={() => setForm({ ...form, priceType: PriceType.HOURLY })}
                 />
@@ -125,38 +140,38 @@ export default function NewServiceScreen() {
 
         <View style={{ flexDirection: "row", gap: 10 }}>
           <View style={{ flex: 1 }}>
-            <Field label="价格 (AUD)">
+            <Field label={t("services.priceLabel")}>
               <TextField keyboardType="numeric" value={priceText} onChangeText={setPriceText} />
             </Field>
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="预计时长 (分钟)">
+            <Field label={t("services.durationLabel")}>
               <TextField keyboardType="numeric" value={durationText} onChangeText={setDurationText} />
             </Field>
           </View>
         </View>
 
-        <Field label="服务城市/覆盖区域">
+        <Field label={t("services.cityLabel")}>
           <TextField value={form.city ?? ""} onChangeText={(v) => setForm({ ...form, city: v, serviceArea: v })} />
         </Field>
 
-        <Field label="即时下单">
+        <Field label={t("services.instantFieldLabel")}>
           <SecondaryButton
-            title={form.supportsInstantBooking ? "✓ 支持「即时」快速下单" : "支持「即时」快速下单"}
+            title={form.supportsInstantBooking ? `✓ ${t("services.instantField")}` : t("services.instantField")}
             active={!!form.supportsInstantBooking}
             onPress={() => setForm({ ...form, supportsInstantBooking: !form.supportsInstantBooking })}
           />
         </Field>
 
-        <Field label="地图位置 (可选)">
+        <Field label={t("services.locationLabel")}>
           <LocationPicker value={location} onChange={setLocation} />
         </Field>
 
-        <Field label="服务照片 (可选)">
+        <Field label={t("services.photosLabel")}>
           <ImageUploader urls={photos} onChange={setPhotos} />
         </Field>
 
-        <Field label="可预约时段">
+        <Field label={t("services.availabilityLabel")}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
             {WEEKDAYS.map((label, idx) => (
               <SecondaryButton
@@ -179,7 +194,7 @@ export default function NewServiceScreen() {
 
         <ErrorText>{error}</ErrorText>
 
-        <PrimaryButton title="发布服务" onPress={submit} loading={submitting} />
+        <PrimaryButton title={t("services.publish")} onPress={submit} loading={submitting} />
       </Card>
     </ScrollView>
   );

@@ -41,6 +41,11 @@ export class CreateTaskDto {
   currency?: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  city?: string;
+
+  @IsOptional()
   @ValidateNested()
   @Type(() => GeoPointDto)
   location?: GeoPointDto;

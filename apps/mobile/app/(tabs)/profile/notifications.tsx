@@ -3,6 +3,7 @@ import { useRouter } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { NotificationDto, PaginatedResult } from "@localhub/shared-types";
 import { api } from "@/lib/api";
+import { useLocale } from "@/lib/locale-context";
 import { Card, colors } from "@/components/ui";
 
 function hrefFor(n: NotificationDto): string | null {
@@ -18,6 +19,7 @@ function hrefFor(n: NotificationDto): string | null {
 
 export default function NotificationsScreen() {
   const router = useRouter();
+  const { t } = useLocale();
   const [items, setItems] = useState<NotificationDto[] | null>(null);
 
   const load = () => {
@@ -39,7 +41,7 @@ export default function NotificationsScreen() {
         contentContainerStyle={{ padding: 16, gap: 10 }}
         data={items ?? []}
         keyExtractor={(n) => n.id}
-        ListEmptyComponent={items !== null ? <Text style={styles.empty}>暂无通知</Text> : null}
+        ListEmptyComponent={items !== null ? <Text style={styles.empty}>{t("notifications.empty")}</Text> : null}
         renderItem={({ item }) => {
           const href = hrefFor(item);
           return (

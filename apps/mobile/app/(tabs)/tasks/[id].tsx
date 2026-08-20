@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { ConversationContextType, TaskOfferDto, TaskStatus } from "@localhub/shared-types";
+import {
+  ConversationContextType,
+  TASK_CATEGORY_LABELS,
+  TASK_STATUS_LABELS,
+  TaskCategory,
+  TaskOfferDto,
+  TaskStatus,
+} from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
-import { TASK_CATEGORY_LABELS, TASK_STATUS_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 import { Badge, Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
 import PhotoGallery from "@/components/PhotoGallery";
 import ImageUploader from "@/components/ImageUploader";
@@ -13,7 +20,7 @@ import MessageThread from "@/components/MessageThread";
 interface TaskDetail {
   id: string;
   posterId: string;
-  category: keyof typeof TASK_CATEGORY_LABELS;
+  category: TaskCategory;
   title: string;
   description: string;
   budgetMin: string | null;
@@ -33,6 +40,7 @@ interface TaskDetail {
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { t, locale } = useLocale();
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [offerPrice, setOfferPrice] = useState("");
   const [offerMessage, setOfferMessage] = useState("");
@@ -50,7 +58,7 @@ export default function TaskDetailScreen() {
   if (!task) {
     return (
       <View style={styles.screen}>
-        <Text style={{ padding: 16 }}>加载中...</Text>
+        <Text style={{ padding: 16 }}>{t("common.loading")}</Text>
       </View>
     );
   }
@@ -66,7 +74,7 @@ export default function TaskDetailScreen() {
       await fn();
       await load();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "操作失败");
+      setError(e instanceof ApiError ? e.message : t("tasks.actionFailed"));
     } finally {
       setBusy(false);
     }
@@ -76,21 +84,29 @@ export default function TaskDetailScreen() {
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: 16, gap: 12 }}>
       <Card>
         <View style={{ flexDirection: "row", gap: 6 }}>
-          <Badge label={TASK_CATEGORY_LABELS[task.category]} />
-          {task.isUrgent && <Badge label="加急" />}
+          <Badge label={TASK_CATEGORY_LABELS[locale][task.category]} />
+          {task.isUrgent && <Badge label={t("tasks.urgentBadge")} />}
         </View>
         <Text style={styles.title}>{task.title}</Text>
         <Text style={styles.desc}>{task.description}</Text>
-        <Text style={styles.meta}>状态: {TASK_STATUS_LABELS[task.status]}</Text>
         <Text style={styles.meta}>
-          预算: {task.currency} {task.budgetMin ?? "-"} ~ {task.budgetMax ?? "-"}
+          {t("common.status")}: {TASK_STATUS_LABELS[locale][task.status]}
         </Text>
-        <Text style={styles.meta}>发布者: {task.poster.name}</Text>
-        {task.assignedTasker && <Text style={styles.meta}>跑腿者: {task.assignedTasker.name}</Text>}
+        <Text style={styles.meta}>
+          {t("tasks.budget")}: {task.currency} {task.budgetMin ?? "-"} ~ {task.budgetMax ?? "-"}
+        </Text>
+        <Text style={styles.meta}>
+          {t("tasks.poster")}: {task.poster.name}
+        </Text>
+        {task.assignedTasker && (
+          <Text style={styles.meta}>
+            {t("tasks.tasker")}: {task.assignedTasker.name}
+          </Text>
+        )}
         <PhotoGallery urls={task.attachmentUrls} />
         {task.proofUrls.length > 0 && (
           <View style={{ marginTop: 8 }}>
-            <Text style={styles.label}>完成凭证</Text>
+            <Text style={styles.label}>{t("tasks.completionProof")}</Text>
             <PhotoGallery urls={task.proofUrls} />
           </View>
         )}
@@ -100,15 +116,15 @@ export default function TaskDetailScreen() {
 
       {user && !isPoster && !myOffer && (task.status === "OPEN" || task.status === "OFFERED") && (
         <Card>
-          <Text style={styles.cardTitle}>我要报价</Text>
-          <Field label="报价金额">
+          <Text style={styles.cardTitle}>{t("tasks.makeOffer")}</Text>
+          <Field label={t("tasks.offerAmount")}>
             <TextField keyboardType="numeric" value={offerPrice} onChangeText={setOfferPrice} />
           </Field>
-          <Field label="附言 (可选)">
+          <Field label={t("tasks.offerMessage")}>
             <TextField value={offerMessage} onChangeText={setOfferMessage} />
           </Field>
           <PrimaryButton
-            title="提交报价"
+            title={t("tasks.submitOffer")}
             disabled={!offerPrice}
             loading={busy}
             onPress={() =>
@@ -122,7 +138,9 @@ export default function TaskDetailScreen() {
 
       {isPoster && task.offers.length > 0 && (
         <Card>
-          <Text style={styles.cardTitle}>收到的报价 ({task.offers.length})</Text>
+          <Text style={styles.cardTitle}>
+            {t("tasks.offersReceived")} ({task.offers.length})
+          </Text>
           {task.offers.map((offer) => (
             <View key={offer.id} style={styles.offerRow}>
               <View style={{ flex: 1 }}>
@@ -130,11 +148,13 @@ export default function TaskDetailScreen() {
                   {offer.tasker.name} · {task.currency} {offer.price}
                 </Text>
                 {offer.message && <Text style={styles.meta}>{offer.message}</Text>}
-                <Text style={styles.metaSmall}>状态: {offer.status}</Text>
+                <Text style={styles.metaSmall}>
+                  {t("common.status")}: {offer.status}
+                </Text>
               </View>
               {offer.status === "PENDING" && task.status !== "ASSIGNED" && (
                 <SecondaryButton
-                  title="接受"
+                  title={t("tasks.accept")}
                   onPress={() => run(() => api.post(`/tasks/${id}/offers/${offer.id}/accept`))}
                   disabled={busy}
                 />
@@ -146,17 +166,17 @@ export default function TaskDetailScreen() {
 
       {isAssignedTasker && task.status === "ASSIGNED" && (
         <Card>
-          <PrimaryButton title="开始执行任务" loading={busy} onPress={() => run(() => api.post(`/tasks/${id}/start`))} />
+          <PrimaryButton title={t("tasks.startTask")} loading={busy} onPress={() => run(() => api.post(`/tasks/${id}/start`))} />
         </Card>
       )}
 
       {isAssignedTasker && task.status === "IN_PROGRESS" && (
         <Card>
-          <Text style={styles.cardTitle}>提交完成凭证</Text>
+          <Text style={styles.cardTitle}>{t("tasks.submitCompletionTitle")}</Text>
           <ImageUploader urls={proofUrls} onChange={setProofUrls} />
           <View style={{ height: 8 }} />
           <PrimaryButton
-            title="提交"
+            title={t("tasks.submit")}
             disabled={proofUrls.length === 0}
             loading={busy}
             onPress={() => run(() => api.post(`/tasks/${id}/submit-completion`, { proofUrls }))}
@@ -167,7 +187,7 @@ export default function TaskDetailScreen() {
       {isPoster && task.status === "SUBMITTED" && (
         <Card>
           <PrimaryButton
-            title="确认完成并结束任务"
+            title={t("tasks.confirmCompletion")}
             loading={busy}
             onPress={() => run(() => api.post(`/tasks/${id}/confirm-completion`))}
           />
@@ -175,7 +195,7 @@ export default function TaskDetailScreen() {
       )}
 
       {isPoster && (task.status === "OPEN" || task.status === "OFFERED") && (
-        <SecondaryButton title="取消任务" onPress={() => run(() => api.post(`/tasks/${id}/cancel`))} disabled={busy} />
+        <SecondaryButton title={t("tasks.cancelTask")} onPress={() => run(() => api.post(`/tasks/${id}/cancel`))} disabled={busy} />
       )}
 
       <MessageThread contextType={ConversationContextType.TASK} contextId={task.id} />

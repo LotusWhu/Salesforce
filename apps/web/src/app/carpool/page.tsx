@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CarpoolRequestDto, CarpoolType } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 
 const AIRPORTS = [
   { value: "Sydney Airport", label: "悉尼机场 Sydney Airport (SYD)", city: "Sydney" },
@@ -15,16 +16,16 @@ const AIRPORTS = [
   { value: "Adelaide Airport", label: "阿德莱德机场 Adelaide Airport (ADL)", city: "Adelaide" },
 ];
 
-const FLEXIBILITY_OPTIONS = [
-  { minutes: 30, label: "精确匹配", hint: "±30分钟 · 标准价" },
-  { minutes: 120, label: "较灵活", hint: "±2小时 · 更容易拼车，价格更优惠" },
-  { minutes: 720, label: "很灵活", hint: "±12小时 · 最容易拼成，价格最优惠" },
-];
-
 type Direction = "TO_AIRPORT" | "FROM_AIRPORT";
 
 export default function CarpoolBookingPage() {
   const { user } = useAuth();
+  const { t } = useLocale();
+  const FLEXIBILITY_OPTIONS = [
+    { minutes: 30, label: t("carpool.flexExact"), hint: t("carpool.flexExactHint") },
+    { minutes: 120, label: t("carpool.flexFlexible"), hint: t("carpool.flexFlexibleHint") },
+    { minutes: 720, label: t("carpool.flexVeryFlexible"), hint: t("carpool.flexVeryFlexibleHint") },
+  ];
   const [direction, setDirection] = useState<Direction>("TO_AIRPORT");
   const [airport, setAirport] = useState(AIRPORTS[0].value);
   const [terminal, setTerminal] = useState("");
@@ -44,14 +45,14 @@ export default function CarpoolBookingPage() {
   const [matchedTrip, setMatchedTrip] = useState<{ id: string; pricePerSeat: number; currency: string; departureTime: string } | null>(null);
 
   const airportMeta = AIRPORTS.find((a) => a.value === airport)!;
-  const timeLabel = direction === "TO_AIRPORT" ? "登车时间" : "航班到达时间";
+  const timeLabel = direction === "TO_AIRPORT" ? t("carpool.boardingTime") : t("carpool.flightArrivalTime");
 
   const submit = async () => {
     setError(null);
     setResult(null);
     setMatchedTrip(null);
     if (!otherLocation || !date || !time) {
-      setError(direction === "TO_AIRPORT" ? "请填写接送地点和登车时间" : "请填写目的地和航班到达时间");
+      setError(direction === "TO_AIRPORT" ? t("carpool.fillPickupTime") : t("carpool.fillDestArrival"));
       return;
     }
     setSubmitting(true);
@@ -86,7 +87,7 @@ export default function CarpoolBookingPage() {
         setMatchedTrip(trip);
       }
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "提交失败，请稍后重试");
+      setError(e instanceof ApiError ? e.message : t("carpool.submitFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -96,9 +97,9 @@ export default function CarpoolBookingPage() {
     return (
       <div className="mx-auto max-w-md">
         <div className="card">
-          <p>请先登录后再预订接送机。</p>
+          <p>{t("carpool.loginToBook")}</p>
           <a href="/login" className="btn-primary mt-3 inline-block text-sm">
-            去登录
+            {t("common.goLogin")}
           </a>
         </div>
       </div>
@@ -108,13 +109,13 @@ export default function CarpoolBookingPage() {
   return (
     <div className="mx-auto max-w-lg">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold">拼车接送机</h1>
+        <h1 className="text-xl font-bold">{t("nav.carpool")}</h1>
         <div className="flex gap-3 text-sm">
           <Link href="/carpool/trips" className="text-brand-600 hover:underline">
-            浏览已发布行程
+            {t("carpool.browseTrips")}
           </Link>
           <Link href="/carpool/new" className="text-brand-600 hover:underline">
-            我是车主
+            {t("carpool.imDriver")}
           </Link>
         </div>
       </div>
@@ -124,8 +125,8 @@ export default function CarpoolBookingPage() {
         <div className="mb-5 flex border-b border-neutral-200">
           {(
             [
-              { key: "TO_AIRPORT", label: "送机 To Airport" },
-              { key: "FROM_AIRPORT", label: "接机 From Airport" },
+              { key: "TO_AIRPORT", label: t("carpool.toAirport") },
+              { key: "FROM_AIRPORT", label: t("carpool.fromAirport") },
             ] as const
           ).map((tab) => (
             <button
@@ -145,7 +146,7 @@ export default function CarpoolBookingPage() {
         <div className="space-y-4">
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="label">机场</label>
+              <label className="label">{t("carpool.airportLabel")}</label>
               <select className="input" value={airport} onChange={(e) => setAirport(e.target.value)}>
                 {AIRPORTS.map((a) => (
                   <option key={a.value} value={a.value}>
@@ -155,16 +156,21 @@ export default function CarpoolBookingPage() {
               </select>
             </div>
             <div className="flex-1">
-              <label className="label">航站楼 (可选)</label>
-              <input className="input" placeholder="如 T1" value={terminal} onChange={(e) => setTerminal(e.target.value)} />
+              <label className="label">{t("carpool.terminalLabel")}</label>
+              <input
+                className="input"
+                placeholder={t("carpool.terminalPlaceholder")}
+                value={terminal}
+                onChange={(e) => setTerminal(e.target.value)}
+              />
             </div>
           </div>
 
           <div>
-            <label className="label">{direction === "TO_AIRPORT" ? "接送地点 (上车地址)" : "目的地地址"}</label>
+            <label className="label">{direction === "TO_AIRPORT" ? t("carpool.pickupLocation") : t("carpool.destAddress")}</label>
             <input
               className="input"
-              placeholder="输入详细地址"
+              placeholder={t("carpool.addressPlaceholder")}
               value={otherLocation}
               onChange={(e) => setOtherLocation(e.target.value)}
             />
@@ -172,7 +178,7 @@ export default function CarpoolBookingPage() {
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="label">日期</label>
+              <label className="label">{t("carpool.dateLabel")}</label>
               <input type="date" className="input" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div className="flex-1">
@@ -182,10 +188,10 @@ export default function CarpoolBookingPage() {
           </div>
 
           <div>
-            <label className="label">航班号 (可选)</label>
+            <label className="label">{t("carpool.flightNumberLabel")}</label>
             <input
               className="input"
-              placeholder="未定可留空"
+              placeholder={t("carpool.flightNumberPlaceholder")}
               value={flightNumber}
               onChange={(e) => setFlightNumber(e.target.value)}
             />
@@ -193,7 +199,7 @@ export default function CarpoolBookingPage() {
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="label">乘客人数</label>
+              <label className="label">{t("carpool.passengerCount")}</label>
               <input
                 type="number"
                 min={1}
@@ -204,7 +210,7 @@ export default function CarpoolBookingPage() {
               />
             </div>
             <div className="flex-1">
-              <label className="label">行李件数</label>
+              <label className="label">{t("carpool.luggageCount")}</label>
               <input
                 type="number"
                 min={0}
@@ -217,15 +223,15 @@ export default function CarpoolBookingPage() {
           </div>
 
           <div>
-            <label className="label">行程类型</label>
+            <label className="label">{t("carpool.tripType")}</label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 text-sm">
                 <input type="radio" checked={fareMode === "ONE_WAY"} onChange={() => setFareMode("ONE_WAY")} />
-                单程
+                {t("carpool.oneWay")}
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <input type="radio" checked={fareMode === "ROUND_TRIP"} onChange={() => setFareMode("ROUND_TRIP")} />
-                往返
+                {t("carpool.roundTrip")}
               </label>
             </div>
           </div>
@@ -233,18 +239,18 @@ export default function CarpoolBookingPage() {
           {fareMode === "ROUND_TRIP" && (
             <div className="flex gap-3 rounded-lg bg-neutral-50 p-3">
               <div className="flex-1">
-                <label className="label">返程日期</label>
+                <label className="label">{t("carpool.returnDate")}</label>
                 <input type="date" className="input" value={returnDate} onChange={(e) => setReturnDate(e.target.value)} />
               </div>
               <div className="flex-1">
-                <label className="label">返程时间</label>
+                <label className="label">{t("carpool.returnTime")}</label>
                 <input type="time" className="input" value={returnTime} onChange={(e) => setReturnTime(e.target.value)} />
               </div>
             </div>
           )}
 
           <div>
-            <label className="label">时间灵活度</label>
+            <label className="label">{t("carpool.flexibility")}</label>
             <div className="grid gap-2">
               {FLEXIBILITY_OPTIONS.map((opt) => (
                 <button
@@ -267,34 +273,34 @@ export default function CarpoolBookingPage() {
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <button className="btn-primary w-full" onClick={submit} disabled={submitting}>
-            {submitting ? "匹配中..." : "Next 提交需求"}
+            {submitting ? t("carpool.matching") : t("carpool.submitRequest")}
           </button>
         </div>
       </div>
 
       {result && result.status === "MATCHED" && (
         <div className="card mt-4 border-green-200 bg-green-50">
-          <p className="font-semibold text-green-700">已为你自动匹配到一辆时间相近的行程！</p>
+          <p className="font-semibold text-green-700">{t("carpool.matchedTitle")}</p>
           {matchedTrip && (
             <div className="mt-2 space-y-1 text-sm text-neutral-700">
-              <p>出发时间: {new Date(matchedTrip.departureTime).toLocaleString()}</p>
               <p>
-                当前单价: {matchedTrip.currency} {matchedTrip.pricePerSeat} / 座
+                {t("carpool.departureTime")}: {new Date(matchedTrip.departureTime).toLocaleString()}
+              </p>
+              <p>
+                {t("carpool.currentPrice")}: {matchedTrip.currency} {matchedTrip.pricePerSeat} {t("carpool.perSeat")}
               </p>
             </div>
           )}
           <Link href={`/carpool/${result.matchedTripId}`} className="btn-primary mt-3 inline-block text-sm">
-            查看行程详情
+            {t("carpool.viewTripDetail")}
           </Link>
         </div>
       )}
 
       {result && result.status === "PENDING" && (
         <div className="card mt-4 border-amber-200 bg-amber-50">
-          <p className="font-semibold text-amber-700">已加入拼车等待池</p>
-          <p className="mt-1 text-sm text-neutral-600">
-            暂时还没有时间相近的行程。一旦有司机发布匹配的行程，会自动为你拼上并通知你 —— 灵活度越高，等待的同时也更省钱。
-          </p>
+          <p className="font-semibold text-amber-700">{t("carpool.pendingTitle")}</p>
+          <p className="mt-1 text-sm text-neutral-600">{t("carpool.pendingDesc")}</p>
         </div>
       )}
     </div>

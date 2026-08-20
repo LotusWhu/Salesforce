@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Switch, Text, View } from "react-native";
-import { CreateTaskDto, TaskCategory, TaskDto } from "@localhub/shared-types";
+import { CreateTaskDto, TASK_CATEGORY_LABELS, TaskCategory, TaskDto } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
-import { TASK_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
 import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
 import ImageUploader from "@/components/ImageUploader";
@@ -12,6 +12,7 @@ import ImageUploader from "@/components/ImageUploader";
 export default function NewTaskScreen() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { t, locale, city } = useLocale();
   const [form, setForm] = useState<CreateTaskDto>({
     category: TaskCategory.BUY_TICKET,
     title: "",
@@ -30,9 +31,9 @@ export default function NewTaskScreen() {
     return (
       <View style={styles.screen}>
         <Card>
-          <Text>请先登录后再发布任务。</Text>
+          <Text>{t("tasks.loginToPublish")}</Text>
           <View style={{ height: 10 }} />
-          <PrimaryButton title="去登录" onPress={() => router.push("/login")} />
+          <PrimaryButton title={t("common.goLogin")} onPress={() => router.push("/login")} />
         </Card>
       </View>
     );
@@ -41,13 +42,14 @@ export default function NewTaskScreen() {
   const submit = async () => {
     setError(null);
     if (!form.title || !form.description) {
-      setError("请填写标题和描述");
+      setError(t("tasks.fillTitleDesc"));
       return;
     }
     setSubmitting(true);
     try {
       const task = await api.post<TaskDto>("/tasks", {
         ...form,
+        city: city ?? undefined,
         budgetMin: budgetMin ? Number(budgetMin) : undefined,
         budgetMax: budgetMax ? Number(budgetMax) : undefined,
         location: location ? { lat: location.lat, lng: location.lng, address: location.address } : undefined,
@@ -55,7 +57,7 @@ export default function NewTaskScreen() {
       });
       router.replace(`/tasks/${task.id}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "发布失败，请稍后重试");
+      setError(e instanceof ApiError ? e.message : t("tasks.publishFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -64,9 +66,9 @@ export default function NewTaskScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: 16 }}>
       <Card>
-        <Field label="任务分类">
+        <Field label={t("tasks.categoryLabel")}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-            {Object.entries(TASK_CATEGORY_LABELS).map(([key, label]) => (
+            {Object.entries(TASK_CATEGORY_LABELS[locale]).map(([key, label]) => (
               <SecondaryButton
                 key={key}
                 title={label}
@@ -77,19 +79,19 @@ export default function NewTaskScreen() {
           </View>
         </Field>
 
-        <Field label="标题">
+        <Field label={t("tasks.titleLabel")}>
           <TextField
-            placeholder="例如：帮忙买两张周六晚场电影票"
+            placeholder={t("tasks.titlePlaceholder")}
             value={form.title}
             onChangeText={(v) => setForm({ ...form, title: v })}
           />
         </Field>
 
-        <Field label="详细描述">
+        <Field label={t("tasks.descLabel")}>
           <TextField
             style={{ minHeight: 90 }}
             multiline
-            placeholder="请详细描述任务要求"
+            placeholder={t("tasks.descPlaceholder")}
             value={form.description}
             onChangeText={(v) => setForm({ ...form, description: v })}
           />
@@ -97,46 +99,40 @@ export default function NewTaskScreen() {
 
         <View style={{ flexDirection: "row", gap: 10 }}>
           <View style={{ flex: 1 }}>
-            <Field label="预算下限 (AUD)">
+            <Field label={t("tasks.budgetMin")}>
               <TextField keyboardType="numeric" value={budgetMin} onChangeText={setBudgetMin} />
             </Field>
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="预算上限 (AUD)">
+            <Field label={t("tasks.budgetMax")}>
               <TextField keyboardType="numeric" value={budgetMax} onChangeText={setBudgetMax} />
             </Field>
           </View>
         </View>
 
         <View style={styles.switchRow}>
-          <Text style={{ color: colors.text }}>此任务无需上门 (如代买票、线上代办)</Text>
-          <Switch
-            value={!!form.isRemote}
-            onValueChange={(v) => setForm({ ...form, isRemote: v })}
-          />
+          <Text style={{ color: colors.text }}>{t("tasks.isRemote")}</Text>
+          <Switch value={!!form.isRemote} onValueChange={(v) => setForm({ ...form, isRemote: v })} />
         </View>
 
         <View style={styles.switchRow}>
-          <Text style={{ color: colors.text }}>加急/即时任务 (希望尽快有人接单)</Text>
-          <Switch
-            value={!!form.isUrgent}
-            onValueChange={(v) => setForm({ ...form, isUrgent: v })}
-          />
+          <Text style={{ color: colors.text }}>{t("tasks.isUrgentField")}</Text>
+          <Switch value={!!form.isUrgent} onValueChange={(v) => setForm({ ...form, isUrgent: v })} />
         </View>
 
         {!form.isRemote && (
-          <Field label="任务地点 (需上门时，在地图上标记位置)">
+          <Field label={t("tasks.locationLabel")}>
             <LocationPicker value={location} onChange={setLocation} />
           </Field>
         )}
 
-        <Field label="参考图片 (可选)">
+        <Field label={t("tasks.attachmentsLabel")}>
           <ImageUploader urls={attachmentUrls} onChange={setAttachmentUrls} />
         </Field>
 
         <ErrorText>{error}</ErrorText>
 
-        <PrimaryButton title="发布任务" onPress={submit} loading={submitting} />
+        <PrimaryButton title={t("tasks.publish")} onPress={submit} loading={submitting} />
       </Card>
     </ScrollView>
   );

@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
-import { CarpoolTripDto, CarpoolType, PaginatedResult } from "@localhub/shared-types";
+import { CARPOOL_TYPE_LABELS, CarpoolTripDto, CarpoolType, PaginatedResult } from "@localhub/shared-types";
 import { api, buildQuery } from "@/lib/api";
-import { CARPOOL_TYPE_LABELS } from "@/lib/labels";
+import { useLocale } from "@/lib/locale-context";
 import { Badge, Card, PrimaryButton, SecondaryButton, colors } from "@/components/ui";
 
 export default function CarpoolTripsListScreen() {
   const router = useRouter();
+  const { t, locale } = useLocale();
   const [type, setType] = useState<CarpoolType | "">("");
   const [data, setData] = useState<PaginatedResult<CarpoolTripDto> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +24,7 @@ export default function CarpoolTripsListScreen() {
   return (
     <View style={styles.screen}>
       <View style={styles.header}>
-        <PrimaryButton title="+ 发布行程" onPress={() => router.push("/carpool/new")} />
+        <PrimaryButton title={`+ ${t("carpool.publish")}`} onPress={() => router.push("/carpool/new")} />
       </View>
 
       <FlatList
@@ -35,7 +36,7 @@ export default function CarpoolTripsListScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             style={{ marginBottom: 12 }}
-            data={[["", "全部"], ...Object.entries(CARPOOL_TYPE_LABELS)]}
+            data={[["", t("common.all")], ...Object.entries(CARPOOL_TYPE_LABELS[locale])]}
             keyExtractor={([key]) => key}
             renderItem={({ item: [key, label] }) => (
               <View style={{ marginRight: 8 }}>
@@ -44,20 +45,20 @@ export default function CarpoolTripsListScreen() {
             )}
           />
         }
-        ListEmptyComponent={!loading ? <Text style={styles.empty}>暂无行程，快来发布第一个吧</Text> : null}
+        ListEmptyComponent={!loading ? <Text style={styles.empty}>{t("carpool.noTrips")}</Text> : null}
         renderItem={({ item }) => (
           <Pressable onPress={() => router.push(`/carpool/${item.id}`)}>
             <Card>
-              <Badge label={CARPOOL_TYPE_LABELS[item.type]} />
+              <Badge label={CARPOOL_TYPE_LABELS[locale][item.type]} />
               <Text style={styles.title}>
                 {item.origin.address} → {item.destination.address}
               </Text>
               <Text style={styles.desc}>
-                出发: {new Date(item.departureTime).toLocaleString()}
-                {item.flightNumber ? ` · 航班 ${item.flightNumber}` : ""}
+                {t("carpool.departureTime")}: {new Date(item.departureTime).toLocaleString()}
+                {item.flightNumber ? ` · ${t("carpool.flightPrefix")} ${item.flightNumber}` : ""}
               </Text>
               <Text style={styles.price}>
-                {item.currency} {item.pricePerSeat}/座 · 剩余 {item.seatsAvailable}/{item.totalSeats}
+                {item.currency} {item.pricePerSeat}{t("carpool.perSeat")} · {t("carpool.remaining")} {item.seatsAvailable}/{item.totalSeats}
               </Text>
             </Card>
           </Pressable>

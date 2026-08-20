@@ -1,20 +1,23 @@
 import { Link } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { colors } from "@/components/ui";
-
-const MODULES = [
-  { href: "/tasks", emoji: "🏃", title: "跑腿代办", desc: "代买票、代看房拍照、代排队、代购等" },
-  { href: "/services", emoji: "🧹", title: "上门服务预约", desc: "保洁、美甲、钢琴教学，短信验证码+日历同步" },
-  { href: "/carpool", emoji: "🚗", title: "拼车接送机", desc: "接送机拼车，填航班号方便举牌接机" },
-  { href: "/classifieds", emoji: "📋", title: "分类信息", desc: "二手交易、租房、招聘求职、社区活动" },
-] as const;
+import { useLocale } from "@/lib/locale-context";
 
 export default function HomeTab() {
+  const { t } = useLocale();
+
+  const MODULES = [
+    { href: "/tasks", emoji: "🏃", title: t("nav.tasks"), desc: t("home.tasksDesc") },
+    { href: "/services", emoji: "🧹", title: t("nav.services"), desc: t("home.servicesDesc") },
+    { href: "/carpool", emoji: "🚗", title: t("nav.carpool"), desc: t("home.carpoolDesc") },
+    { href: "/classifieds", emoji: "📋", title: t("nav.classifieds"), desc: t("home.classifiedsDesc") },
+  ] as const;
+
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: 16 }}>
       <View style={styles.hero}>
-        <Text style={styles.heroTitle}>LocalHub · 华人生活服务平台</Text>
-        <Text style={styles.heroSubtitle}>跑腿代办、上门服务、拼车接送机、分类信息，一个 App 搞定海外生活大小事</Text>
+        <Text style={styles.heroTitle}>{t("home.heroTitle")}</Text>
+        <Text style={styles.heroSubtitle}>{t("home.heroSubtitle")}</Text>
       </View>
 
       {MODULES.map((m) => (

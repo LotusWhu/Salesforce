@@ -3,14 +3,8 @@ import { useRouter } from "expo-router";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { ConversationContextType, ConversationSummaryDto } from "@localhub/shared-types";
 import { api } from "@/lib/api";
+import { useLocale } from "@/lib/locale-context";
 import { Badge, Card, colors } from "@/components/ui";
-
-const CONTEXT_LABELS: Record<ConversationContextType, string> = {
-  TASK: "跑腿任务",
-  BOOKING: "上门服务预约",
-  CARPOOL_TRIP: "拼车行程",
-  CLASSIFIED_LISTING: "分类信息",
-};
 
 function hrefFor(c: ConversationSummaryDto): string | null {
   switch (c.contextType) {
@@ -27,7 +21,15 @@ function hrefFor(c: ConversationSummaryDto): string | null {
 
 export default function MyMessagesScreen() {
   const router = useRouter();
+  const { t } = useLocale();
   const [conversations, setConversations] = useState<ConversationSummaryDto[] | null>(null);
+
+  const CONTEXT_LABELS: Record<ConversationContextType, string> = {
+    TASK: t("messages.contextTask"),
+    BOOKING: t("messages.contextBooking"),
+    CARPOOL_TRIP: t("messages.contextCarpool"),
+    CLASSIFIED_LISTING: t("messages.contextClassified"),
+  };
 
   useEffect(() => {
     api.get<ConversationSummaryDto[]>("/chat/mine").then(setConversations);
@@ -39,7 +41,7 @@ export default function MyMessagesScreen() {
         contentContainerStyle={{ padding: 16, gap: 10 }}
         data={conversations ?? []}
         keyExtractor={(c) => `${c.contextType}-${c.contextId}`}
-        ListEmptyComponent={conversations !== null ? <Text style={styles.empty}>暂无消息</Text> : null}
+        ListEmptyComponent={conversations !== null ? <Text style={styles.empty}>{t("messages.empty")}</Text> : null}
         renderItem={({ item }) => {
           const href = hrefFor(item);
           return (
@@ -49,7 +51,7 @@ export default function MyMessagesScreen() {
                   <View style={{ flex: 1 }}>
                     <Badge label={CONTEXT_LABELS[item.contextType]} />
                     <Text style={styles.preview} numberOfLines={2}>
-                      {item.lastMessagePreview ?? "暂无留言"}
+                      {item.lastMessagePreview ?? t("messages.noPreview")}
                     </Text>
                   </View>
                   {item.unread && <View style={styles.dot} />}

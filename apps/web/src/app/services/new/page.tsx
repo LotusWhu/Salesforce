@@ -2,18 +2,32 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CreateServiceListingDto, PriceType, ServiceCategory, ServiceListingDto } from "@localhub/shared-types";
+import {
+  CreateServiceListingDto,
+  PriceType,
+  SERVICE_CATEGORY_LABELS,
+  ServiceCategory,
+  ServiceListingDto,
+} from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
-import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
 import ImageUploader from "@/components/ImageUploader";
-
-const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
 export default function NewServicePage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
+  const { t, locale, city } = useLocale();
+  const WEEKDAYS = [
+    t("services.weekdaySun"),
+    t("services.weekdayMon"),
+    t("services.weekdayTue"),
+    t("services.weekdayWed"),
+    t("services.weekdayThu"),
+    t("services.weekdayFri"),
+    t("services.weekdaySat"),
+  ];
   const [form, setForm] = useState<CreateServiceListingDto>({
     category: ServiceCategory.HOUSE_CLEANING,
     title: "",
@@ -22,6 +36,7 @@ export default function NewServicePage() {
     price: 0,
     currency: "AUD",
     durationMinutes: 60,
+    city: city ?? undefined,
   });
   const [location, setLocation] = useState<PickedLocation | null>(null);
   const [activeDays, setActiveDays] = useState<Record<number, boolean>>({ 1: true, 2: true, 3: true, 4: true, 5: true });
@@ -33,9 +48,9 @@ export default function NewServicePage() {
   if (!authLoading && !user) {
     return (
       <div className="card max-w-md">
-        <p>请先登录后再发布服务。</p>
+        <p>{t("services.loginToPublish")}</p>
         <a href="/login" className="btn-primary mt-3 inline-block text-sm">
-          去登录
+          {t("common.goLogin")}
         </a>
       </div>
     );
@@ -44,7 +59,7 @@ export default function NewServicePage() {
   const submit = async () => {
     setError(null);
     if (!form.title || !form.description || !form.price) {
-      setError("请填写标题、描述和价格");
+      setError(t("services.fillRequired"));
       return;
     }
     setSubmitting(true);
@@ -61,7 +76,7 @@ export default function NewServicePage() {
       }
       router.push(`/services/${listing.id}`);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "发布失败，请稍后重试");
+      setError(e instanceof ApiError ? e.message : t("services.publishFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -69,16 +84,16 @@ export default function NewServicePage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="mb-4 text-xl font-bold">发布上门服务</h1>
+      <h1 className="mb-4 text-xl font-bold">{t("services.publish")}</h1>
       <div className="card space-y-4">
         <div>
-          <label className="label">服务分类</label>
+          <label className="label">{t("services.categoryLabel")}</label>
           <select
             className="input"
             value={form.category}
             onChange={(e) => setForm({ ...form, category: e.target.value as ServiceCategory })}
           >
-            {Object.entries(SERVICE_CATEGORY_LABELS).map(([key, label]) => (
+            {Object.entries(SERVICE_CATEGORY_LABELS[locale]).map(([key, label]) => (
               <option key={key} value={key}>
                 {label}
               </option>
@@ -87,17 +102,17 @@ export default function NewServicePage() {
         </div>
 
         <div>
-          <label className="label">标题</label>
+          <label className="label">{t("services.titleLabel")}</label>
           <input
             className="input"
-            placeholder="例如：专业居家保洁，5年经验"
+            placeholder={t("services.titlePlaceholder")}
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
         </div>
 
         <div>
-          <label className="label">详细描述</label>
+          <label className="label">{t("services.descLabel")}</label>
           <textarea
             className="input min-h-24"
             value={form.description}
@@ -107,18 +122,18 @@ export default function NewServicePage() {
 
         <div className="flex gap-3">
           <div className="flex-1">
-            <label className="label">计价方式</label>
+            <label className="label">{t("services.priceTypeLabel")}</label>
             <select
               className="input"
               value={form.priceType}
               onChange={(e) => setForm({ ...form, priceType: e.target.value as PriceType })}
             >
-              <option value={PriceType.FIXED}>一次性收费</option>
-              <option value={PriceType.HOURLY}>按小时收费</option>
+              <option value={PriceType.FIXED}>{t("services.priceTypeFixed")}</option>
+              <option value={PriceType.HOURLY}>{t("services.priceTypeHourly")}</option>
             </select>
           </div>
           <div className="flex-1">
-            <label className="label">价格 (AUD)</label>
+            <label className="label">{t("services.priceLabel")}</label>
             <input
               type="number"
               className="input"
@@ -129,7 +144,7 @@ export default function NewServicePage() {
         </div>
 
         <div>
-          <label className="label">预计时长 (分钟)</label>
+          <label className="label">{t("services.durationLabel")}</label>
           <input
             type="number"
             className="input"
@@ -139,10 +154,10 @@ export default function NewServicePage() {
         </div>
 
         <div>
-          <label className="label">服务城市/覆盖区域</label>
+          <label className="label">{t("services.cityLabel")}</label>
           <input
             className="input"
-            placeholder="例如：悉尼 / CBD周边20公里"
+            placeholder={t("services.cityPlaceholder")}
             value={form.city ?? ""}
             onChange={(e) => setForm({ ...form, city: e.target.value, serviceArea: e.target.value })}
           />
@@ -154,21 +169,21 @@ export default function NewServicePage() {
             checked={form.supportsInstantBooking ?? false}
             onChange={(e) => setForm({ ...form, supportsInstantBooking: e.target.checked })}
           />
-          支持「即时」快速下单（客户可一键选中最早可用时段直接预约）
+          {t("services.instantField")}
         </label>
 
         <div>
-          <label className="label">地图位置 (可选，方便客户在地图上找到你的服务范围)</label>
+          <label className="label">{t("services.locationLabel")}</label>
           <LocationPicker value={location} onChange={setLocation} />
         </div>
 
         <div>
-          <label className="label">服务照片 (可选)</label>
+          <label className="label">{t("services.photosLabel")}</label>
           <ImageUploader urls={form.photos ?? []} onChange={(photos) => setForm({ ...form, photos })} />
         </div>
 
         <div>
-          <label className="label">可预约时段</label>
+          <label className="label">{t("services.availabilityLabel")}</label>
           <div className="mb-2 flex flex-wrap gap-2">
             {WEEKDAYS.map((label, idx) => (
               <button
@@ -183,7 +198,7 @@ export default function NewServicePage() {
           </div>
           <div className="flex gap-3">
             <input type="time" className="input" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-            <span className="self-center">至</span>
+            <span className="self-center">{t("services.to")}</span>
             <input type="time" className="input" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
           </div>
         </div>
@@ -191,7 +206,7 @@ export default function NewServicePage() {
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <button className="btn-primary w-full" onClick={submit} disabled={submitting}>
-          {submitting ? "发布中..." : "发布服务"}
+          {submitting ? t("services.publishing") : t("services.publish")}
         </button>
       </div>
     </div>

@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { BOOKING_STATUS_LABELS, BookingStatus } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 
 interface ScheduleBooking {
   id: string;
@@ -16,24 +18,9 @@ interface ScheduleBooking {
   customer: { id: string; name: string; avatarUrl: string | null };
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING_CONFIRMATION: "待客户确认",
-  CONFIRMED: "已确认",
-  IN_PROGRESS: "进行中",
-  COMPLETED: "已完成",
-  CANCELLED: "已取消",
-  NO_SHOW: "未到场",
-};
-
 function dateKey(iso: string) {
   const d = new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function formatDayLabel(key: string) {
-  const d = new Date(`${key}T00:00:00`);
-  const weekday = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][d.getDay()];
-  return `${d.getMonth() + 1}月${d.getDate()}日 ${weekday}`;
 }
 
 function formatTime(iso: string) {
@@ -43,6 +30,20 @@ function formatTime(iso: string) {
 
 export default function MySchedulePage() {
   const { user, loading: authLoading } = useAuth();
+  const { t, locale } = useLocale();
+  const WEEKDAYS = [
+    t("services.weekdaySun"),
+    t("services.weekdayMon"),
+    t("services.weekdayTue"),
+    t("services.weekdayWed"),
+    t("services.weekdayThu"),
+    t("services.weekdayFri"),
+    t("services.weekdaySat"),
+  ];
+  const formatDayLabel = (key: string) => {
+    const d = new Date(`${key}T00:00:00`);
+    return `${d.getMonth() + 1}/${d.getDate()} ${WEEKDAYS[d.getDay()]}`;
+  };
   const [bookings, setBookings] = useState<ScheduleBooking[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -57,14 +58,14 @@ export default function MySchedulePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  if (authLoading) return <p className="text-neutral-500">加载中...</p>;
+  if (authLoading) return <p className="text-neutral-500">{t("common.loading")}</p>;
 
   if (!user) {
     return (
       <div className="card max-w-md">
-        <p>请先登录。</p>
+        <p>{t("common.loginFirst")}</p>
         <a href="/login" className="btn-primary mt-3 inline-block text-sm">
-          去登录
+          {t("common.goLogin")}
         </a>
       </div>
     );
@@ -77,7 +78,7 @@ export default function MySchedulePage() {
       await fn();
       await load();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "操作失败");
+      setError(e instanceof ApiError ? e.message : t("schedule.actionFailed"));
     } finally {
       setBusyId(null);
     }
@@ -95,20 +96,20 @@ export default function MySchedulePage() {
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold">我的预约日程</h1>
-          <p className="mt-1 text-sm text-neutral-500">按日期分组展示客户预约你服务的时间安排，类似日历日程表</p>
+          <h1 className="text-xl font-bold">{t("schedule.title")}</h1>
+          <p className="mt-1 text-sm text-neutral-500">{t("schedule.groupedDesc")}</p>
         </div>
         <Link href="/me" className="btn-secondary text-sm">
-          返回个人中心
+          {t("schedule.backToProfile")}
         </Link>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {bookings === null && <p className="text-neutral-500">加载中...</p>}
+      {bookings === null && <p className="text-neutral-500">{t("common.loading")}</p>}
       {bookings !== null && bookings.length === 0 && (
         <div className="card">
-          <p className="text-neutral-500">暂时没有客户预约你的服务</p>
+          <p className="text-neutral-500">{t("schedule.noBookings")}</p>
         </div>
       )}
 
@@ -123,12 +124,22 @@ export default function MySchedulePage() {
                     <p className="font-semibold">
                       {formatTime(b.scheduledStart)} - {formatTime(b.scheduledEnd)} · {b.service.title}
                     </p>
-                    <p className="mt-1 text-sm text-neutral-500">客户: {b.customer.name}</p>
-                    {b.address?.address && <p className="mt-1 text-sm text-neutral-500">地址: {b.address.address}</p>}
-                    {b.notes && <p className="mt-1 text-sm text-neutral-500">备注: {b.notes}</p>}
+                    <p className="mt-1 text-sm text-neutral-500">
+                      {t("schedule.customer")}: {b.customer.name}
+                    </p>
+                    {b.address?.address && (
+                      <p className="mt-1 text-sm text-neutral-500">
+                        {t("schedule.address")}: {b.address.address}
+                      </p>
+                    )}
+                    {b.notes && (
+                      <p className="mt-1 text-sm text-neutral-500">
+                        {t("schedule.notes")}: {b.notes}
+                      </p>
+                    )}
                   </div>
                   <span className="whitespace-nowrap rounded bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-600">
-                    {STATUS_LABELS[b.status] ?? b.status}
+                    {BOOKING_STATUS_LABELS[locale][b.status as BookingStatus] ?? b.status}
                   </span>
                 </div>
                 {(b.status === "CONFIRMED" || b.status === "IN_PROGRESS") && (
@@ -138,14 +149,14 @@ export default function MySchedulePage() {
                       disabled={busyId === b.id}
                       onClick={() => run(b.id, () => api.post(`/bookings/${b.id}/complete`))}
                     >
-                      标记完成
+                      {t("schedule.complete")}
                     </button>
                     <button
                       className="btn-secondary text-sm"
                       disabled={busyId === b.id}
                       onClick={() => run(b.id, () => api.post(`/bookings/${b.id}/cancel`))}
                     >
-                      取消预约
+                      {t("schedule.cancel")}
                     </button>
                   </div>
                 )}

@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { FlatList, StyleSheet, Text, View } from "react-native";
+import { BOOKING_STATUS_LABELS, BookingStatus } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 import { Badge, Card, ErrorText, PrimaryButton, SecondaryButton, colors } from "@/components/ui";
 
 interface ScheduleBooking {
@@ -15,24 +17,9 @@ interface ScheduleBooking {
   customer: { id: string; name: string };
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING_CONFIRMATION: "待客户确认",
-  CONFIRMED: "已确认",
-  IN_PROGRESS: "进行中",
-  COMPLETED: "已完成",
-  CANCELLED: "已取消",
-  NO_SHOW: "未到场",
-};
-
 function dateKey(iso: string) {
   const d = new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function formatDayLabel(key: string) {
-  const d = new Date(`${key}T00:00:00`);
-  const weekday = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"][d.getDay()];
-  return `${d.getMonth() + 1}月${d.getDate()}日 ${weekday}`;
 }
 
 function formatTime(iso: string) {
@@ -44,6 +31,20 @@ type Row = { type: "header"; key: string } | { type: "booking"; booking: Schedul
 
 export default function MyScheduleScreen() {
   const { user } = useAuth();
+  const { t, locale } = useLocale();
+  const WEEKDAYS = [
+    t("services.weekdaySun"),
+    t("services.weekdayMon"),
+    t("services.weekdayTue"),
+    t("services.weekdayWed"),
+    t("services.weekdayThu"),
+    t("services.weekdayFri"),
+    t("services.weekdaySat"),
+  ];
+  const formatDayLabel = (key: string) => {
+    const d = new Date(`${key}T00:00:00`);
+    return `${d.getMonth() + 1}/${d.getDate()} ${WEEKDAYS[d.getDay()]}`;
+  };
   const [bookings, setBookings] = useState<ScheduleBooking[] | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +68,7 @@ export default function MyScheduleScreen() {
       await fn();
       await load();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "操作失败");
+      setError(e instanceof ApiError ? e.message : t("schedule.actionFailed"));
     } finally {
       setBusyId(null);
     }
@@ -92,7 +93,7 @@ export default function MyScheduleScreen() {
         contentContainerStyle={{ padding: 16, gap: 8 }}
         data={rows}
         keyExtractor={(row, idx) => (row.type === "header" ? `h-${row.key}` : row.booking.id) + idx}
-        ListEmptyComponent={bookings !== null ? <Text style={styles.empty}>暂时没有客户预约你的服务</Text> : null}
+        ListEmptyComponent={bookings !== null ? <Text style={styles.empty}>{t("schedule.noBookings")}</Text> : null}
         renderItem={({ item }) => {
           if (item.type === "header") {
             return <Text style={styles.dayHeader}>{formatDayLabel(item.key)}</Text>;
@@ -105,21 +106,31 @@ export default function MyScheduleScreen() {
                   <Text style={styles.bookingTitle}>
                     {formatTime(b.scheduledStart)} - {formatTime(b.scheduledEnd)} · {b.service.title}
                   </Text>
-                  <Text style={styles.meta}>客户: {b.customer.name}</Text>
-                  {b.address?.address && <Text style={styles.meta}>地址: {b.address.address}</Text>}
-                  {b.notes && <Text style={styles.meta}>备注: {b.notes}</Text>}
+                  <Text style={styles.meta}>
+                    {t("schedule.customer")}: {b.customer.name}
+                  </Text>
+                  {b.address?.address && (
+                    <Text style={styles.meta}>
+                      {t("schedule.address")}: {b.address.address}
+                    </Text>
+                  )}
+                  {b.notes && (
+                    <Text style={styles.meta}>
+                      {t("schedule.notes")}: {b.notes}
+                    </Text>
+                  )}
                 </View>
-                <Badge label={STATUS_LABELS[b.status] ?? b.status} />
+                <Badge label={BOOKING_STATUS_LABELS[locale][b.status as BookingStatus] ?? b.status} />
               </View>
               {(b.status === "CONFIRMED" || b.status === "IN_PROGRESS") && (
                 <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
                   <PrimaryButton
-                    title="标记完成"
+                    title={t("schedule.complete")}
                     onPress={() => run(b.id, () => api.post(`/bookings/${b.id}/complete`))}
                     disabled={busyId === b.id}
                   />
                   <SecondaryButton
-                    title="取消预约"
+                    title={t("schedule.cancel")}
                     onPress={() => run(b.id, () => api.post(`/bookings/${b.id}/cancel`))}
                     disabled={busyId === b.id}
                   />

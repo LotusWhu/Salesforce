@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 
 function GoogleCalendarCallbackNotice({
   onConnected,
@@ -38,6 +39,7 @@ function StripeConnectCallbackNotice({ onReturn }: { onReturn: () => void }) {
 
 export default function MePage() {
   const { user, loading, refresh } = useAuth();
+  const { t } = useLocale();
   const [connecting, setConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -52,14 +54,14 @@ export default function MePage() {
     }
   }, [user]);
 
-  if (loading) return <p className="text-neutral-500">加载中...</p>;
+  if (loading) return <p className="text-neutral-500">{t("common.loading")}</p>;
 
   if (!user) {
     return (
       <div className="card max-w-md">
-        <p>请先登录。</p>
+        <p>{t("common.loginFirst")}</p>
         <a href="/login" className="btn-primary mt-3 inline-block text-sm">
-          去登录
+          {t("common.goLogin")}
         </a>
       </div>
     );
@@ -123,14 +125,14 @@ export default function MePage() {
       <Suspense fallback={null}>
         <GoogleCalendarCallbackNotice
           onConnected={() => {
-            setMessage("Google 日历已连接成功！预约确认后会自动同步到你的日历。");
+            setMessage(t("profile.googleCalendarConnected"));
             refresh();
           }}
-          onError={() => setError("Google 日历连接失败，请重试。")}
+          onError={() => setError(t("profile.googleCalendarConnectFailed"))}
         />
         <StripeConnectCallbackNotice
           onReturn={() => {
-            setMessage("已从 Stripe 入驻页面返回，正在刷新收款账号状态...");
+            setMessage(t("profile.stripeReturning"));
             refreshStripeStatus();
           }}
         />
@@ -140,7 +142,7 @@ export default function MePage() {
         <h1 className="text-xl font-bold">{user.name}</h1>
         <p className="mt-1 text-sm text-neutral-500">{user.phone}</p>
         <p className="mt-1 text-sm text-neutral-500">
-          评分: {user.ratingAvg.toFixed(1)} ({user.ratingCount} 条评价)
+          {t("profile.rating")}: {user.ratingAvg.toFixed(1)} ({user.ratingCount} {t("profile.reviews")})
         </p>
       </div>
 
@@ -150,15 +152,12 @@ export default function MePage() {
       <div className="card">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-semibold">Google 日历同步</h2>
-            <p className="mt-1 text-sm text-neutral-500">
-              连接后，上门服务预约在客户确认验证码后会自动同步到你的 Google 日历，
-              方便个体户（如钢琴老师、保洁阿姨）统一管理自己的预约时间。
-            </p>
+            <h2 className="font-semibold">{t("profile.googleCalendarTitle")}</h2>
+            <p className="mt-1 text-sm text-neutral-500">{t("profile.googleCalendarDesc")}</p>
             <p className="mt-2 text-sm">
-              状态:{" "}
+              {t("common.status")}:{" "}
               <span className={user.googleCalendarConnected ? "font-medium text-green-600" : "text-neutral-500"}>
-                {user.googleCalendarConnected ? "已连接" : "未连接"}
+                {user.googleCalendarConnected ? t("common.connected") : t("common.notConnected")}
               </span>
             </p>
           </div>
@@ -166,11 +165,11 @@ export default function MePage() {
         <div className="mt-3">
           {user.googleCalendarConnected ? (
             <button className="btn-secondary text-sm" disabled={connecting} onClick={disconnectGoogleCalendar}>
-              断开连接
+              {t("common.disconnect")}
             </button>
           ) : (
             <button className="btn-primary text-sm" disabled={connecting} onClick={connectGoogleCalendar}>
-              {connecting ? "跳转中..." : "连接 Google 日历"}
+              {connecting ? t("common.jumping") : t("profile.googleCalendarConnect")}
             </button>
           )}
         </div>
@@ -179,13 +178,11 @@ export default function MePage() {
       <div className="card">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-semibold">我的预约管理</h2>
-            <p className="mt-1 text-sm text-neutral-500">
-              查看客户预约你服务的时间安排，按日期分组展示，可确认完成或取消。
-            </p>
+            <h2 className="font-semibold">{t("profile.scheduleTitle")}</h2>
+            <p className="mt-1 text-sm text-neutral-500">{t("profile.scheduleDesc")}</p>
           </div>
           <Link href="/me/schedule" className="btn-secondary text-sm">
-            查看日程
+            {t("profile.viewSchedule")}
           </Link>
         </div>
       </div>
@@ -194,17 +191,17 @@ export default function MePage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-semibold">
-              通知
+              {t("profile.notificationsTitle")}
               {unreadCount > 0 && (
                 <span className="ml-2 rounded-full bg-red-500 px-2 py-0.5 text-xs font-medium text-white">
                   {unreadCount}
                 </span>
               )}
             </h2>
-            <p className="mt-1 text-sm text-neutral-500">任务/预约/拼车相关的通知，已注册推送时也会同步收到手机通知</p>
+            <p className="mt-1 text-sm text-neutral-500">{t("profile.notificationsDesc")}</p>
           </div>
           <Link href="/me/notifications" className="btn-secondary text-sm">
-            查看通知
+            {t("profile.viewNotifications")}
           </Link>
         </div>
       </div>
@@ -212,33 +209,30 @@ export default function MePage() {
       <div className="card">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-semibold">我的消息</h2>
-            <p className="mt-1 text-sm text-neutral-500">跑腿任务/预约/拼车/分类信息下的公开留言</p>
+            <h2 className="font-semibold">{t("profile.messagesTitle")}</h2>
+            <p className="mt-1 text-sm text-neutral-500">{t("profile.messagesDesc")}</p>
           </div>
           <Link href="/me/messages" className="btn-secondary text-sm">
-            查看消息
+            {t("profile.viewMessages")}
           </Link>
         </div>
       </div>
 
       <div className="card">
-        <h2 className="font-semibold">收款账号 (Stripe Connect)</h2>
-        <p className="mt-1 text-sm text-neutral-500">
-          跑腿任务/预约/拼车的费用会先进入平台担保账户，服务确认完成后自动扣除平台服务费，净额通过 Stripe
-          转给你——个体户(跑腿者/服务提供者/车主)需要先完成这个收款账号入驻才能收到分账。
-        </p>
+        <h2 className="font-semibold">{t("profile.stripeTitle")}</h2>
+        <p className="mt-1 text-sm text-neutral-500">{t("profile.stripeDesc")}</p>
         <p className="mt-2 text-sm">
-          状态:{" "}
+          {t("common.status")}:{" "}
           <span className={user.stripeConnectOnboarded ? "font-medium text-green-600" : "text-neutral-500"}>
-            {user.stripeConnectOnboarded ? "已入驻，可接收分账" : "未入驻"}
+            {user.stripeConnectOnboarded ? t("profile.stripeOnboarded") : t("profile.stripeNotOnboarded")}
           </span>
         </p>
         <div className="mt-3 flex gap-2">
           <button className="btn-primary text-sm" disabled={connecting} onClick={connectStripe}>
-            {connecting ? "处理中..." : user.stripeConnectOnboarded ? "重新设置收款账号" : "设置收款账号"}
+            {connecting ? t("common.processing") : user.stripeConnectOnboarded ? t("profile.stripeResetup") : t("profile.stripeSetup")}
           </button>
           <button className="btn-secondary text-sm" disabled={connecting} onClick={refreshStripeStatus}>
-            刷新状态
+            {t("common.refreshStatus")}
           </button>
         </div>
       </div>
@@ -246,11 +240,11 @@ export default function MePage() {
       <div className="card">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="font-semibold">我的交易</h2>
-            <p className="mt-1 text-sm text-neutral-500">担保交易(托管/释放/退款)记录</p>
+            <h2 className="font-semibold">{t("profile.paymentsTitle")}</h2>
+            <p className="mt-1 text-sm text-neutral-500">{t("profile.paymentsDesc")}</p>
           </div>
           <Link href="/me/payments" className="btn-secondary text-sm">
-            查看交易
+            {t("profile.viewPayments")}
           </Link>
         </div>
       </div>

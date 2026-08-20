@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { CarpoolRequestDto, CarpoolType } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
+import { useLocale } from "@/lib/locale-context";
 import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
 
 const AIRPORTS = [
@@ -15,17 +16,17 @@ const AIRPORTS = [
   { value: "Adelaide Airport", label: "阿德莱德 ADL", city: "Adelaide" },
 ];
 
-const FLEXIBILITY_OPTIONS = [
-  { minutes: 30, label: "精确匹配", hint: "±30分钟 · 标准价" },
-  { minutes: 120, label: "较灵活", hint: "±2小时 · 更省钱" },
-  { minutes: 720, label: "很灵活", hint: "±12小时 · 最省钱" },
-];
-
 type Direction = "TO_AIRPORT" | "FROM_AIRPORT";
 
 export default function CarpoolBookingScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useLocale();
+  const FLEXIBILITY_OPTIONS = [
+    { minutes: 30, label: t("carpool.flexExact"), hint: t("carpool.flexExactHint") },
+    { minutes: 120, label: t("carpool.flexFlexible"), hint: t("carpool.flexFlexibleHint") },
+    { minutes: 720, label: t("carpool.flexVeryFlexible"), hint: t("carpool.flexVeryFlexibleHint") },
+  ];
   const [direction, setDirection] = useState<Direction>("TO_AIRPORT");
   const [airport, setAirport] = useState(AIRPORTS[0].value);
   const [terminal, setTerminal] = useState("");
@@ -47,15 +48,15 @@ export default function CarpoolBookingScreen() {
   );
 
   const airportMeta = AIRPORTS.find((a) => a.value === airport)!;
-  const timeLabel = direction === "TO_AIRPORT" ? "登车时间 (HH:mm)" : "航班到达时间 (HH:mm)";
+  const timeLabel = direction === "TO_AIRPORT" ? t("carpool.boardingTimeHHmm") : t("carpool.flightArrivalTimeHHmm");
 
   if (!user) {
     return (
       <View style={styles.screen}>
         <Card>
-          <Text>请先登录后再预订接送机。</Text>
+          <Text>{t("carpool.loginToBook")}</Text>
           <View style={{ height: 10 }} />
-          <PrimaryButton title="去登录" onPress={() => router.push("/login")} />
+          <PrimaryButton title={t("common.goLogin")} onPress={() => router.push("/login")} />
         </Card>
       </View>
     );
@@ -66,7 +67,7 @@ export default function CarpoolBookingScreen() {
     setResult(null);
     setMatchedTrip(null);
     if (!otherLocation || !date || !time) {
-      setError(direction === "TO_AIRPORT" ? "请填写接送地点和登车时间" : "请填写目的地和航班到达时间");
+      setError(direction === "TO_AIRPORT" ? t("carpool.fillPickupTime") : t("carpool.fillDestArrival"));
       return;
     }
     setSubmitting(true);
@@ -100,7 +101,7 @@ export default function CarpoolBookingScreen() {
         setMatchedTrip(trip);
       }
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : "提交失败，请稍后重试");
+      setError(e instanceof ApiError ? e.message : t("carpool.submitFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -109,16 +110,16 @@ export default function CarpoolBookingScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={{ padding: 16 }}>
       <View style={styles.linksRow}>
-        <SecondaryButton title="浏览已发布行程" onPress={() => router.push("/carpool/trips")} />
-        <SecondaryButton title="我是车主" onPress={() => router.push("/carpool/new")} />
+        <SecondaryButton title={t("carpool.browseTrips")} onPress={() => router.push("/carpool/trips")} />
+        <SecondaryButton title={t("carpool.imDriver")} onPress={() => router.push("/carpool/new")} />
       </View>
 
       <Card>
         <View style={styles.tabRow}>
           {(
             [
-              { key: "TO_AIRPORT", label: "送机 To Airport" },
-              { key: "FROM_AIRPORT", label: "接机 From Airport" },
+              { key: "TO_AIRPORT", label: t("carpool.toAirport") },
+              { key: "FROM_AIRPORT", label: t("carpool.fromAirport") },
             ] as const
           ).map((tab) => (
             <SecondaryButton
@@ -130,7 +131,7 @@ export default function CarpoolBookingScreen() {
           ))}
         </View>
 
-        <Field label="机场">
+        <Field label={t("carpool.airportLabel")}>
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
             {AIRPORTS.map((a) => (
               <SecondaryButton key={a.value} title={a.label} active={airport === a.value} onPress={() => setAirport(a.value)} />
@@ -138,17 +139,17 @@ export default function CarpoolBookingScreen() {
           </View>
         </Field>
 
-        <Field label="航站楼 (可选)">
-          <TextField placeholder="如 T1" value={terminal} onChangeText={setTerminal} />
+        <Field label={t("carpool.terminalLabel")}>
+          <TextField placeholder={t("carpool.terminalPlaceholder")} value={terminal} onChangeText={setTerminal} />
         </Field>
 
-        <Field label={direction === "TO_AIRPORT" ? "接送地点 (上车地址)" : "目的地地址"}>
-          <TextField placeholder="输入详细地址" value={otherLocation} onChangeText={setOtherLocation} />
+        <Field label={direction === "TO_AIRPORT" ? t("carpool.pickupLocation") : t("carpool.destAddress")}>
+          <TextField placeholder={t("carpool.addressPlaceholder")} value={otherLocation} onChangeText={setOtherLocation} />
         </Field>
 
         <View style={{ flexDirection: "row", gap: 10 }}>
           <View style={{ flex: 1 }}>
-            <Field label="日期 (YYYY-MM-DD)">
+            <Field label={t("carpool.dateLabelYMD")}>
               <TextField placeholder="2026-09-05" value={date} onChangeText={setDate} />
             </Field>
           </View>
@@ -159,46 +160,46 @@ export default function CarpoolBookingScreen() {
           </View>
         </View>
 
-        <Field label="航班号 (可选)">
-          <TextField placeholder="未定可留空" value={flightNumber} onChangeText={setFlightNumber} />
+        <Field label={t("carpool.flightNumberLabel")}>
+          <TextField placeholder={t("carpool.flightNumberPlaceholder")} value={flightNumber} onChangeText={setFlightNumber} />
         </Field>
 
         <View style={{ flexDirection: "row", gap: 10 }}>
           <View style={{ flex: 1 }}>
-            <Field label="乘客人数">
+            <Field label={t("carpool.passengerCount")}>
               <TextField keyboardType="numeric" value={passengerCountText} onChangeText={setPassengerCountText} />
             </Field>
           </View>
           <View style={{ flex: 1 }}>
-            <Field label="行李件数">
+            <Field label={t("carpool.luggageCount")}>
               <TextField keyboardType="numeric" value={luggageCountText} onChangeText={setLuggageCountText} />
             </Field>
           </View>
         </View>
 
-        <Field label="行程类型">
+        <Field label={t("carpool.tripType")}>
           <View style={{ flexDirection: "row", gap: 8 }}>
-            <SecondaryButton title="单程" active={fareMode === "ONE_WAY"} onPress={() => setFareMode("ONE_WAY")} />
-            <SecondaryButton title="往返" active={fareMode === "ROUND_TRIP"} onPress={() => setFareMode("ROUND_TRIP")} />
+            <SecondaryButton title={t("carpool.oneWay")} active={fareMode === "ONE_WAY"} onPress={() => setFareMode("ONE_WAY")} />
+            <SecondaryButton title={t("carpool.roundTrip")} active={fareMode === "ROUND_TRIP"} onPress={() => setFareMode("ROUND_TRIP")} />
           </View>
         </Field>
 
         {fareMode === "ROUND_TRIP" && (
           <View style={{ flexDirection: "row", gap: 10 }}>
             <View style={{ flex: 1 }}>
-              <Field label="返程日期">
+              <Field label={t("carpool.returnDate")}>
                 <TextField placeholder="2026-09-10" value={returnDate} onChangeText={setReturnDate} />
               </Field>
             </View>
             <View style={{ flex: 1 }}>
-              <Field label="返程时间">
+              <Field label={t("carpool.returnTime")}>
                 <TextField placeholder="14:00" value={returnTime} onChangeText={setReturnTime} />
               </Field>
             </View>
           </View>
         )}
 
-        <Field label="时间灵活度">
+        <Field label={t("carpool.flexibility")}>
           <View style={{ gap: 8 }}>
             {FLEXIBILITY_OPTIONS.map((opt) => (
               <SecondaryButton
@@ -213,31 +214,31 @@ export default function CarpoolBookingScreen() {
 
         <ErrorText>{error}</ErrorText>
 
-        <PrimaryButton title="Next 提交需求" onPress={submit} loading={submitting} />
+        <PrimaryButton title={t("carpool.submitRequest")} onPress={submit} loading={submitting} />
       </Card>
 
       {result && result.status === "MATCHED" && (
         <Card style={{ marginTop: 12, borderColor: "#bbf7d0", backgroundColor: "#f0fdf4" }}>
-          <Text style={styles.successTitle}>已为你自动匹配到一辆时间相近的行程！</Text>
+          <Text style={styles.successTitle}>{t("carpool.matchedTitle")}</Text>
           {matchedTrip && (
             <View style={{ marginTop: 6 }}>
-              <Text style={styles.meta}>出发时间: {new Date(matchedTrip.departureTime).toLocaleString()}</Text>
               <Text style={styles.meta}>
-                当前单价: {matchedTrip.currency} {matchedTrip.pricePerSeat} / 座
+                {t("carpool.departureTime")}: {new Date(matchedTrip.departureTime).toLocaleString()}
+              </Text>
+              <Text style={styles.meta}>
+                {t("carpool.currentPrice")}: {matchedTrip.currency} {matchedTrip.pricePerSeat} {t("carpool.perSeat")}
               </Text>
             </View>
           )}
           <View style={{ height: 10 }} />
-          <PrimaryButton title="查看行程详情" onPress={() => router.push(`/carpool/${result.matchedTripId}`)} />
+          <PrimaryButton title={t("carpool.viewTripDetail")} onPress={() => router.push(`/carpool/${result.matchedTripId}`)} />
         </Card>
       )}
 
       {result && result.status === "PENDING" && (
         <Card style={{ marginTop: 12, borderColor: "#fde68a", backgroundColor: "#fffbeb" }}>
-          <Text style={styles.pendingTitle}>已加入拼车等待池</Text>
-          <Text style={styles.meta}>
-            暂时还没有时间相近的行程。一旦有司机发布匹配的行程，会自动为你拼上并通知你 —— 灵活度越高，等待的同时也更省钱。
-          </Text>
+          <Text style={styles.pendingTitle}>{t("carpool.pendingTitle")}</Text>
+          <Text style={styles.meta}>{t("carpool.pendingDesc")}</Text>
         </Card>
       )}
     </ScrollView>
