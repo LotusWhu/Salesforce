@@ -22,6 +22,13 @@ export function serializeTask<T extends { locationLat: number | null; locationLn
   return { ...rest, location: toGeoPoint(locationLat, locationLng, locationAddress) };
 }
 
+export function serializeServiceListing<
+  T extends { locationLat: number | null; locationLng: number | null; locationAddress: string | null },
+>(listing: T) {
+  const { locationLat, locationLng, locationAddress, ...rest } = listing;
+  return { ...rest, location: toGeoPoint(locationLat, locationLng, locationAddress) };
+}
+
 export function serializeBooking<T extends { addressLat: number | null; addressLng: number | null; addressText: string | null }>(
   booking: T,
 ) {

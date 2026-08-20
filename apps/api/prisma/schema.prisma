@@ -212,6 +212,9 @@ model ServiceListing {
   durationMinutes Int
   serviceArea     String?
   city            String?
+  locationLat     Float?
+  locationLng     Float?
+  locationAddress String?
   photos          String[]        @default([])
   active          Boolean         @default(true)
   supportsInstantBooking Boolean  @default(false)

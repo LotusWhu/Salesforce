@@ -6,6 +6,7 @@ import { CreateServiceListingDto, PriceType, ServiceCategory, ServiceListingDto 
 import { api, ApiError } from "@/lib/api";
 import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
 
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
@@ -21,6 +22,7 @@ export default function NewServicePage() {
     currency: "AUD",
     durationMinutes: 60,
   });
+  const [location, setLocation] = useState<PickedLocation | null>(null);
   const [activeDays, setActiveDays] = useState<Record<number, boolean>>({ 1: true, 2: true, 3: true, 4: true, 5: true });
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("18:00");
@@ -46,7 +48,10 @@ export default function NewServicePage() {
     }
     setSubmitting(true);
     try {
-      const listing = await api.post<ServiceListingDto>("/services", form);
+      const listing = await api.post<ServiceListingDto>("/services", {
+        ...form,
+        location: location ? { lat: location.lat, lng: location.lng, address: location.address } : undefined,
+      });
       const slots = Object.entries(activeDays)
         .filter(([, on]) => on)
         .map(([day]) => ({ dayOfWeek: Number(day), startTime, endTime }));
@@ -150,6 +155,11 @@ export default function NewServicePage() {
           />
           支持「即时」快速下单（客户可一键选中最早可用时段直接预约）
         </label>
+
+        <div>
+          <label className="label">地图位置 (可选，方便客户在地图上找到你的服务范围)</label>
+          <LocationPicker value={location} onChange={setLocation} />
+        </div>
 
         <div>
           <label className="label">可预约时段</label>

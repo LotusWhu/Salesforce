@@ -6,6 +6,7 @@ import { CreateTaskDto, TaskCategory, TaskDto } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { TASK_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
 
 export default function NewTaskPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function NewTaskPage() {
     currency: "AUD",
     isRemote: true,
   });
+  const [location, setLocation] = useState<PickedLocation | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +41,10 @@ export default function NewTaskPage() {
     }
     setSubmitting(true);
     try {
-      const task = await api.post<TaskDto>("/tasks", form);
+      const task = await api.post<TaskDto>("/tasks", {
+        ...form,
+        location: location ? { lat: location.lat, lng: location.lng, address: location.address } : undefined,
+      });
       router.push(`/tasks/${task.id}`);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "发布失败，请稍后重试");
@@ -134,6 +139,13 @@ export default function NewTaskPage() {
           />
           加急/即时任务 (希望尽快有人接单)
         </label>
+
+        {!form.isRemote && (
+          <div>
+            <label className="label">任务地点 (需上门时，在地图上标记位置)</label>
+            <LocationPicker value={location} onChange={setLocation} />
+          </div>
+        )}
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

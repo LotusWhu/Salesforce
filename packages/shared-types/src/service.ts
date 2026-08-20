@@ -13,6 +13,7 @@ export interface ServiceListingDto {
   durationMinutes: number; // 预计时长，用于日历排期
   serviceArea?: string | null; // 服务覆盖区域描述，如"悉尼CBD周边20公里"
   city?: string | null;
+  location?: GeoPoint | null; // 地图展示用坐标 (可选，发布时可在地图上选点)
   photos: string[];
   active: boolean;
   supportsInstantBooking: boolean; // 发布者自己勾选: 是否支持"最早可用时间"快速下单
@@ -29,6 +30,7 @@ export interface CreateServiceListingDto {
   durationMinutes: number;
   serviceArea?: string;
   city?: string;
+  location?: GeoPoint;
   photos?: string[];
   supportsInstantBooking?: boolean;
 }

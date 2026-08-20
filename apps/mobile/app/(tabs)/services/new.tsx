@@ -6,6 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
+import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
 
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
@@ -21,6 +22,7 @@ export default function NewServiceScreen() {
     currency: "AUD",
     durationMinutes: 60,
   });
+  const [location, setLocation] = useState<PickedLocation | null>(null);
   const [priceText, setPriceText] = useState("");
   const [durationText, setDurationText] = useState("60");
   const [activeDays, setActiveDays] = useState<Record<number, boolean>>({ 1: true, 2: true, 3: true, 4: true, 5: true });
@@ -54,6 +56,7 @@ export default function NewServiceScreen() {
         ...form,
         price,
         durationMinutes: Number(durationText) || 60,
+        location: location ? { lat: location.lat, lng: location.lng, address: location.address } : undefined,
       });
       const slots = Object.entries(activeDays)
         .filter(([, on]) => on)
@@ -140,6 +143,10 @@ export default function NewServiceScreen() {
             active={!!form.supportsInstantBooking}
             onPress={() => setForm({ ...form, supportsInstantBooking: !form.supportsInstantBooking })}
           />
+        </Field>
+
+        <Field label="地图位置 (可选)">
+          <LocationPicker value={location} onChange={setLocation} />
         </Field>
 
         <Field label="可预约时段">

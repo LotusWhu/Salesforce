@@ -3,7 +3,7 @@ import { BookingStatus, NotificationType, OtpPurpose } from "@localhub/shared-ty
 import { PrismaService } from "../prisma/prisma.service";
 import { NotificationsService } from "../common/services/notifications.service";
 import { GoogleCalendarService } from "../common/services/google-calendar.service";
-import { serializeBooking } from "../common/serializers";
+import { serializeBooking, serializeServiceListing } from "../common/serializers";
 import { AuthService } from "../auth/auth.service";
 import { CreateServiceListingDto } from "./dto/create-service-listing.dto";
 import { SetAvailabilityDto } from "./dto/set-availability.dto";
@@ -24,7 +24,7 @@ export class ServicesService {
   // ---------------- 服务发布 (保洁/美甲/钢琴教学等) ----------------
 
   async createListing(providerId: string, dto: CreateServiceListingDto) {
-    return this.prisma.serviceListing.create({
+    const listing = await this.prisma.serviceListing.create({
       data: {
         providerId,
         category: dto.category,
@@ -36,10 +36,14 @@ export class ServicesService {
         durationMinutes: dto.durationMinutes,
         serviceArea: dto.serviceArea,
         city: dto.city,
+        locationLat: dto.location?.lat,
+        locationLng: dto.location?.lng,
+        locationAddress: dto.location?.address,
         photos: dto.photos ?? [],
         supportsInstantBooking: dto.supportsInstantBooking ?? false,
       },
     });
+    return serializeServiceListing(listing);
   }
 
   async listListings(query: ListServicesQueryDto) {
@@ -69,7 +73,7 @@ export class ServicesService {
       }),
       this.prisma.serviceListing.count({ where }),
     ]);
-    return { items, total, page, pageSize };
+    return { items: items.map(serializeServiceListing), total, page, pageSize };
   }
 
   async getListingById(id: string) {
@@ -81,7 +85,7 @@ export class ServicesService {
       },
     });
     if (!listing) throw new NotFoundException("服务不存在");
-    return listing;
+    return serializeServiceListing(listing);
   }
 
   async setAvailability(serviceId: string, providerId: string, dto: SetAvailabilityDto) {

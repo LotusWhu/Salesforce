@@ -104,12 +104,28 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 - `apps/mobile/app/(tabs)/profile`：`index.tsx` 个人中心（含 Google 日历连接入口），`schedule.tsx` 预约日程管理，与网页版逻辑对应。
 - `packages/shared-types`：三端共用类型，新增字段/枚举时优先在这里改，再同步各端使用处。
 
+## 地图功能 (List/Map 切换 + 地图选点)
+
+跑腿任务、上门服务、分类信息三个模块都支持 **列表 / 地图** 视图切换、关键词搜索、分类筛选，发布表单里可以直接在地图上点选位置（对标 realestate.com.au 的浏览体验）。
+
+当前用 **OpenStreetMap 免费瓦片占位**（不需要 API Key/计费），架构上做了 Provider 抽象，后续换 Google Maps 只需要改这两个文件，调用方（列表页/表单）的 props 接口不用动：
+
+- 网页版：`apps/web/src/components/MapView.tsx`（Leaflet + `react-leaflet`，`DynamicMapView.tsx` 做了 `next/dynamic` 的 SSR 禁用包装）
+- App 端：`apps/mobile/src/components/MapView.tsx`（`react-native-webview` 里内嵌一个自包含的 Leaflet HTML 页面，这样 iOS/Android 都不需要 Google Maps SDK/API Key 就能跑）
+- 两端都配了 `apps/*/src/components/LocationPicker.tsx`：点击地图选点 + 可选地址描述文本，回填到发布表单的 `location: {lat, lng, address}` 字段
+
+⚠️ 地图瓦片（`tile.openstreetmap.org`）走的是真实外网请求，本仓库当前的开发沙箱网络策略屏蔽了这类外部域名，所以瓦片图片在这个沙箱里加载不出来（会看到空白/灰色底图），但地图容器、点击选点、标记点、List/Map 切换等交互逻辑都已经用 Playwright 端到端验证过，属于沙箱网络限制而非代码问题，用户自己的电脑/正式部署环境不受影响。
+
+`ServiceListing` 新增了 `locationLat/locationLng/locationAddress`（原来只有 `Task`、`ClassifiedListing` 有坐标字段），API 统一通过 `location: GeoPoint` 收发。
+
+后续要换 Google Maps：申请 API Key 后，把 `MapView.tsx` 里的 `TileLayer`/HTML 换成 Google Maps JS SDK（网页版）或 `react-native-maps` 的 `PROVIDER_GOOGLE`（App 端）即可，不需要改动业务页面。
+
 ## 当前进度与后续规划
 
-已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、Stripe 支付意向创建。后续可继续完善：
+已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、Stripe 支付意向创建、List/Map 视图切换。后续可继续完善：
 
 - 图片上传（当前以 URL 字符串形式传入，需接入对象存储如 S3/R2 + 客户端上传组件）
-- 地图选点与真实地理编码（当前 `GeoPoint` 支持 lat/lng，前端表单暂用占位坐标 0,0，需接入 Google Places/Maps SDK）
+- 地址文本自动转坐标 (正向地理编码)：当前地图选点是手动点击，地址输入框只是纯文本标签，还没接 Nominatim/Google Geocoding API 自动把打字的地址转成坐标
 - 站内消息聊天页面（数据模型已设计 `Conversation`/`Message`，尚未接 UI）
 - 支付担保交易的释放/退款触发逻辑、Stripe Connect 分账给跑腿者/服务提供者/车主
 - 推送通知（`Notification` 表已就位，可接 Expo Push / FCM / APNs）

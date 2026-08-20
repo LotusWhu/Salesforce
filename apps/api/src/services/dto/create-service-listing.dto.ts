@@ -1,5 +1,7 @@
 import { PriceType, ServiceCategory } from "@localhub/shared-types";
-import { IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from "class-validator";
+import { Type } from "class-transformer";
+import { IsArray, IsBoolean, IsEnum, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, ValidateNested } from "class-validator";
+import { GeoPointDto } from "../../tasks/dto/geo-point.dto";
 
 export class CreateServiceListingDto {
   @IsEnum(ServiceCategory)
@@ -45,4 +47,9 @@ export class CreateServiceListingDto {
   @IsOptional()
   @IsBoolean()
   supportsInstantBooking?: boolean;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => GeoPointDto)
+  location?: GeoPointDto;
 }

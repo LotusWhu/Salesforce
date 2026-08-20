@@ -6,6 +6,7 @@ import { api, ApiError } from "@/lib/api";
 import { TASK_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
+import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
 
 export default function NewTaskScreen() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function NewTaskScreen() {
     currency: "AUD",
     isRemote: true,
   });
+  const [location, setLocation] = useState<PickedLocation | null>(null);
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +48,7 @@ export default function NewTaskScreen() {
         ...form,
         budgetMin: budgetMin ? Number(budgetMin) : undefined,
         budgetMax: budgetMax ? Number(budgetMax) : undefined,
+        location: location ? { lat: location.lat, lng: location.lng, address: location.address } : undefined,
       });
       router.replace(`/tasks/${task.id}`);
     } catch (e) {
@@ -117,6 +120,12 @@ export default function NewTaskScreen() {
             onValueChange={(v) => setForm({ ...form, isUrgent: v })}
           />
         </View>
+
+        {!form.isRemote && (
+          <Field label="任务地点 (需上门时，在地图上标记位置)">
+            <LocationPicker value={location} onChange={setLocation} />
+          </Field>
+        )}
 
         <ErrorText>{error}</ErrorText>
 
