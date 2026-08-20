@@ -7,6 +7,7 @@ import { api, ApiError } from "@/lib/api";
 import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
+import ImageUploader from "@/components/ImageUploader";
 
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
@@ -159,6 +160,11 @@ export default function NewServicePage() {
         <div>
           <label className="label">地图位置 (可选，方便客户在地图上找到你的服务范围)</label>
           <LocationPicker value={location} onChange={setLocation} />
+        </div>
+
+        <div>
+          <label className="label">服务照片 (可选)</label>
+          <ImageUploader urls={form.photos ?? []} onChange={(photos) => setForm({ ...form, photos })} />
         </div>
 
         <div>

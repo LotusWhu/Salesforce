@@ -5,6 +5,7 @@ import { ClassifiedListingDto } from "@localhub/shared-types";
 import { api } from "@/lib/api";
 import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
 import { Badge, Card, colors } from "@/components/ui";
+import PhotoGallery from "@/components/PhotoGallery";
 
 export default function ClassifiedDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -34,6 +35,7 @@ export default function ClassifiedDetailScreen() {
         <Text style={styles.meta}>
           发布者: {item.poster.name} · 浏览量: {item.viewCount}
         </Text>
+        <PhotoGallery urls={item.photos} />
       </Card>
     </ScrollView>
   );

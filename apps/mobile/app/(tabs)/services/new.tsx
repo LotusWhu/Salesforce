@@ -7,6 +7,7 @@ import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
 import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
+import ImageUploader from "@/components/ImageUploader";
 
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
@@ -23,6 +24,7 @@ export default function NewServiceScreen() {
     durationMinutes: 60,
   });
   const [location, setLocation] = useState<PickedLocation | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [priceText, setPriceText] = useState("");
   const [durationText, setDurationText] = useState("60");
   const [activeDays, setActiveDays] = useState<Record<number, boolean>>({ 1: true, 2: true, 3: true, 4: true, 5: true });
@@ -57,6 +59,7 @@ export default function NewServiceScreen() {
         price,
         durationMinutes: Number(durationText) || 60,
         location: location ? { lat: location.lat, lng: location.lng, address: location.address } : undefined,
+        photos,
       });
       const slots = Object.entries(activeDays)
         .filter(([, on]) => on)
@@ -147,6 +150,10 @@ export default function NewServiceScreen() {
 
         <Field label="地图位置 (可选)">
           <LocationPicker value={location} onChange={setLocation} />
+        </Field>
+
+        <Field label="服务照片 (可选)">
+          <ImageUploader urls={photos} onChange={setPhotos} />
         </Field>
 
         <Field label="可预约时段">

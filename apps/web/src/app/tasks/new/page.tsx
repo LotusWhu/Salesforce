@@ -7,6 +7,7 @@ import { api, ApiError } from "@/lib/api";
 import { TASK_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
+import ImageUploader from "@/components/ImageUploader";
 
 export default function NewTaskPage() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function NewTaskPage() {
     isRemote: true,
   });
   const [location, setLocation] = useState<PickedLocation | null>(null);
+  const [attachmentUrls, setAttachmentUrls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,6 +46,7 @@ export default function NewTaskPage() {
       const task = await api.post<TaskDto>("/tasks", {
         ...form,
         location: location ? { lat: location.lat, lng: location.lng, address: location.address } : undefined,
+        attachmentUrls,
       });
       router.push(`/tasks/${task.id}`);
     } catch (e) {
@@ -146,6 +149,11 @@ export default function NewTaskPage() {
             <LocationPicker value={location} onChange={setLocation} />
           </div>
         )}
+
+        <div>
+          <label className="label">参考图片 (可选，如票务链接截图、看房要求参考图)</label>
+          <ImageUploader urls={attachmentUrls} onChange={setAttachmentUrls} />
+        </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 

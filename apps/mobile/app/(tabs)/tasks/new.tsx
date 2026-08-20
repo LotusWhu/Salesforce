@@ -7,6 +7,7 @@ import { TASK_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
 import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
+import ImageUploader from "@/components/ImageUploader";
 
 export default function NewTaskScreen() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function NewTaskScreen() {
     isRemote: true,
   });
   const [location, setLocation] = useState<PickedLocation | null>(null);
+  const [attachmentUrls, setAttachmentUrls] = useState<string[]>([]);
   const [budgetMin, setBudgetMin] = useState("");
   const [budgetMax, setBudgetMax] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -49,6 +51,7 @@ export default function NewTaskScreen() {
         budgetMin: budgetMin ? Number(budgetMin) : undefined,
         budgetMax: budgetMax ? Number(budgetMax) : undefined,
         location: location ? { lat: location.lat, lng: location.lng, address: location.address } : undefined,
+        attachmentUrls,
       });
       router.replace(`/tasks/${task.id}`);
     } catch (e) {
@@ -126,6 +129,10 @@ export default function NewTaskScreen() {
             <LocationPicker value={location} onChange={setLocation} />
           </Field>
         )}
+
+        <Field label="参考图片 (可选)">
+          <ImageUploader urls={attachmentUrls} onChange={setAttachmentUrls} />
+        </Field>
 
         <ErrorText>{error}</ErrorText>
 

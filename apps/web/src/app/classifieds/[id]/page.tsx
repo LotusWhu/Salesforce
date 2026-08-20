@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { ClassifiedListingDto } from "@localhub/shared-types";
 import { api } from "@/lib/api";
 import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
+import PhotoGallery from "@/components/PhotoGallery";
 
 export default function ClassifiedDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -30,6 +31,7 @@ export default function ClassifiedDetailPage() {
           {item.price !== null && item.price !== undefined ? `${item.currency} ${item.price}` : "价格面议/免费"}
         </p>
         <p className="mt-2 text-sm text-neutral-500">发布者: {item.poster.name} · 浏览量: {item.viewCount}</p>
+        <PhotoGallery urls={item.photos} />
       </div>
     </div>
   );

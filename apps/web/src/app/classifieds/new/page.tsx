@@ -7,6 +7,7 @@ import { api, ApiError } from "@/lib/api";
 import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
+import ImageUploader from "@/components/ImageUploader";
 
 export default function NewClassifiedPage() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function NewClassifiedPage() {
   const [price, setPrice] = useState<string>("");
   const [city, setCity] = useState("");
   const [location, setLocation] = useState<PickedLocation | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +48,7 @@ export default function NewClassifiedPage() {
         price: price ? Number(price) : undefined,
         city: city || undefined,
         location: location ? { lat: location.lat, lng: location.lng, address: location.address } : undefined,
+        photos,
       });
       router.push(`/classifieds/${listing.id}`);
     } catch (e) {
@@ -93,6 +96,11 @@ export default function NewClassifiedPage() {
         <div>
           <label className="label">地图位置 (可选，方便买家在地图上找到你)</label>
           <LocationPicker value={location} onChange={setLocation} />
+        </div>
+
+        <div>
+          <label className="label">图片 (可选)</label>
+          <ImageUploader urls={photos} onChange={setPhotos} />
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}

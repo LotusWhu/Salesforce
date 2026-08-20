@@ -52,6 +52,36 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export interface PickedFile {
+  uri: string;
+  name: string;
+  type: string;
+}
+
+async function uploadFile<T>(path: string, file: PickedFile): Promise<T> {
+  const token = await getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const formData = new FormData();
+  // React Native's FormData expects this {uri,name,type} shape, not a browser File/Blob
+  formData.append("file", { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
+
+  const res = await fetch(`${API_URL}${path}`, { method: "POST", headers, body: formData });
+
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const body = await res.json();
+      message = body.message ?? message;
+    } catch {
+      // ignore json parse errors on non-json error bodies
+    }
+    throw new ApiError(res.status, Array.isArray(message) ? message.join("; ") : message);
+  }
+  return res.json() as Promise<T>;
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path, { method: "GET" }),
   post: <T>(path: string, body?: unknown) =>
@@ -59,6 +89,7 @@ export const api = {
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: "PATCH", body: body !== undefined ? JSON.stringify(body) : undefined }),
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
+  upload: <T>(path: string, file: PickedFile) => uploadFile<T>(path, file),
 };
 
 export function buildQuery(params: Record<string, string | number | boolean | undefined>): string {

@@ -6,6 +6,7 @@ import { BookingDto, NextAvailableSlotDto } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { SERVICE_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import PhotoGallery from "@/components/PhotoGallery";
 
 function toLocalDateInput(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -27,6 +28,7 @@ interface ServiceDetail {
   durationMinutes: number;
   serviceArea: string | null;
   supportsInstantBooking: boolean;
+  photos: string[];
   provider: { id: string; name: string; ratingAvg: number };
   availability: { dayOfWeek: number; startTime: string; endTime: string }[];
 }
@@ -135,6 +137,7 @@ export default function ServiceDetailPage() {
             可预约: {service.availability.map((a) => `${WEEKDAYS[a.dayOfWeek]} ${a.startTime}-${a.endTime}`).join("; ")}
           </p>
         )}
+        <PhotoGallery urls={service.photos} />
       </div>
 
       {!user && (

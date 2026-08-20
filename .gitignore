@@ -34,6 +34,9 @@ Thumbs.db
 # prisma
 apps/api/generated/
 
+# 本地磁盘存储占位 (上传的图片/语音文件，后续换 S3/R2 后不再需要)
+apps/api/storage/
+
 # misc
 *.tsbuildinfo
 coverage/

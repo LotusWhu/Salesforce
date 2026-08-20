@@ -120,13 +120,20 @@ pnpm dev:mobile     # 打开 Expo Dev Tools，用 Expo Go 扫码，或按 i/a �
 
 后续要换 Google Maps：申请 API Key 后，把 `MapView.tsx` 里的 `TileLayer`/HTML 换成 Google Maps JS SDK（网页版）或 `react-native-maps` 的 `PROVIDER_GOOGLE`（App 端）即可，不需要改动业务页面。
 
+## 图片上传
+
+跑腿任务、上门服务、分类信息的发布表单都接了真实的图片上传（不再是手填 URL 字符串），只支持 **jpg/png**，单文件 **≤30MB**：
+
+- 后端 `apps/api/src/uploads/`：`POST /uploads`（JWT 鉴权，`multipart/form-data`）校验 mimetype/大小后落盘，返回 `{url, mimeType, sizeBytes}`。存储层做了 `StorageProvider` 接口抽象，`LocalDiskStorageProvider` 是零配置的本地磁盘占位实现（文件存在 `apps/api/storage/uploads/`，本地开发不需要任何云账号），通过 `main.ts` 里的 `app.useStaticAssets` 在 `/uploads/*` 对外提供访问；后续要换 S3 / Cloudflare R2，只需要新增一个实现 `StorageProvider` 接口的 Provider 并按 env 切换，`UploadsController`/前端调用方都不用改。
+- `ServiceListing`/`ClassifiedListing`/`Task`(`attachmentUrls`) 的发布表单和详情页都接了 `ImageUploader`（选图→自动上传→回填 URL 数组）和 `PhotoGallery`（详情页缩略图画廊）组件，web (`apps/web/src/components/ImageUploader.tsx`) 用原生 `<input type="file">`，mobile (`apps/mobile/src/components/ImageUploader.tsx`) 用 `expo-image-picker`。任务的"完成凭证"提交也从手填逗号分隔 URL 换成了同一套上传组件。
+- 已用真实二进制 PNG 端到端验证：鉴权拒绝未登录请求、mimetype 白名单拒绝非法类型、超过 30MB 返回 413、上传成功后文件可通过返回的 URL 公开访问，以及 Playwright 驱动网页端实际选图→上传→提交→详情页展示全流程。
+
 ## 当前进度与后续规划
 
-已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、Stripe 支付意向创建、List/Map 视图切换。后续可继续完善：
+已完成四大模块的核心闭环（发布 → 处理 → 确认/完成）、手机号验证码登录、Google Calendar 预约同步、Stripe 支付意向创建、List/Map 视图切换、图片上传。后续可继续完善：
 
-- 图片上传（当前以 URL 字符串形式传入，需接入对象存储如 S3/R2 + 客户端上传组件）
 - 地址文本自动转坐标 (正向地理编码)：当前地图选点是手动点击，地址输入框只是纯文本标签，还没接 Nominatim/Google Geocoding API 自动把打字的地址转成坐标
-- 站内消息聊天页面（数据模型已设计 `Conversation`/`Message`，尚未接 UI）
+- 站内消息聊天页面（数据模型已设计 `Conversation`/`Message`，尚未接 UI）；语音消息也需要复用图片上传的存储层（音频 mimetype 已经在 `ALLOWED_AUDIO_MIME_TYPES` 里预留好了）
 - 支付担保交易的释放/退款触发逻辑、Stripe Connect 分账给跑腿者/服务提供者/车主
 - 推送通知（`Notification` 表已就位，可接 Expo Push / FCM / APNs）
 - 多城市/多语言（en/zh）切换的完整落地

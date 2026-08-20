@@ -6,6 +6,8 @@ import { api, ApiError } from "@/lib/api";
 import { TASK_CATEGORY_LABELS, TASK_STATUS_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import { Badge, Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
+import PhotoGallery from "@/components/PhotoGallery";
+import ImageUploader from "@/components/ImageUploader";
 
 interface TaskDetail {
   id: string;
@@ -19,6 +21,7 @@ interface TaskDetail {
   status: TaskStatus;
   isUrgent: boolean;
   assignedTaskerId: string | null;
+  attachmentUrls: string[];
   proofUrls: string[];
   completionNote: string | null;
   poster: { id: string; name: string };
@@ -32,7 +35,7 @@ export default function TaskDetailScreen() {
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [offerPrice, setOfferPrice] = useState("");
   const [offerMessage, setOfferMessage] = useState("");
-  const [proofUrls, setProofUrls] = useState("");
+  const [proofUrls, setProofUrls] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,14 +86,11 @@ export default function TaskDetailScreen() {
         </Text>
         <Text style={styles.meta}>发布者: {task.poster.name}</Text>
         {task.assignedTasker && <Text style={styles.meta}>跑腿者: {task.assignedTasker.name}</Text>}
+        <PhotoGallery urls={task.attachmentUrls} />
         {task.proofUrls.length > 0 && (
           <View style={{ marginTop: 8 }}>
             <Text style={styles.label}>完成凭证</Text>
-            {task.proofUrls.map((url) => (
-              <Text key={url} style={styles.link}>
-                {url}
-              </Text>
-            ))}
+            <PhotoGallery urls={task.proofUrls} />
           </View>
         )}
       </Card>
@@ -152,20 +152,13 @@ export default function TaskDetailScreen() {
       {isAssignedTasker && task.status === "IN_PROGRESS" && (
         <Card>
           <Text style={styles.cardTitle}>提交完成凭证</Text>
-          <Field label="凭证图片链接 (多个用逗号分隔)">
-            <TextField value={proofUrls} onChangeText={setProofUrls} />
-          </Field>
+          <ImageUploader urls={proofUrls} onChange={setProofUrls} />
+          <View style={{ height: 8 }} />
           <PrimaryButton
             title="提交"
-            disabled={!proofUrls}
+            disabled={proofUrls.length === 0}
             loading={busy}
-            onPress={() =>
-              run(() =>
-                api.post(`/tasks/${id}/submit-completion`, {
-                  proofUrls: proofUrls.split(",").map((s) => s.trim()).filter(Boolean),
-                }),
-              )
-            }
+            onPress={() => run(() => api.post(`/tasks/${id}/submit-completion`, { proofUrls }))}
           />
         </Card>
       )}

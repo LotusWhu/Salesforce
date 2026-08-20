@@ -6,6 +6,8 @@ import { TaskOfferDto, TaskStatus } from "@localhub/shared-types";
 import { api, ApiError } from "@/lib/api";
 import { TASK_CATEGORY_LABELS, TASK_STATUS_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
+import PhotoGallery from "@/components/PhotoGallery";
+import ImageUploader from "@/components/ImageUploader";
 
 interface TaskDetail {
   id: string;
@@ -19,6 +21,7 @@ interface TaskDetail {
   status: TaskStatus;
   isUrgent: boolean;
   assignedTaskerId: string | null;
+  attachmentUrls: string[];
   proofUrls: string[];
   completionNote: string | null;
   poster: { id: string; name: string; avatarUrl: string | null; ratingAvg: number };
@@ -33,7 +36,7 @@ export default function TaskDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [offerPrice, setOfferPrice] = useState("");
   const [offerMessage, setOfferMessage] = useState("");
-  const [proofUrls, setProofUrls] = useState("");
+  const [proofUrls, setProofUrls] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
 
   const load = () => api.get<TaskDetail>(`/tasks/${id}`).then(setTask);
@@ -81,18 +84,11 @@ export default function TaskDetailPage() {
           <span>发布者: {task.poster.name}</span>
           {task.assignedTasker && <span>跑腿者: {task.assignedTasker.name}</span>}
         </div>
+        <PhotoGallery urls={task.attachmentUrls} />
         {task.proofUrls.length > 0 && (
           <div className="mt-3">
             <p className="label">完成凭证</p>
-            <ul className="list-disc pl-5 text-sm text-brand-600">
-              {task.proofUrls.map((url) => (
-                <li key={url}>
-                  <a href={url} target="_blank" rel="noreferrer">
-                    {url}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <PhotoGallery urls={task.proofUrls} />
             {task.completionNote && <p className="mt-1 text-sm text-neutral-600">备注: {task.completionNote}</p>}
           </div>
         )}
@@ -168,22 +164,11 @@ export default function TaskDetailPage() {
       {isAssignedTasker && (task.status === "IN_PROGRESS") && (
         <div className="card space-y-3">
           <h2 className="font-semibold">提交完成凭证</h2>
-          <input
-            className="input"
-            placeholder="凭证图片链接，多个用逗号分隔 (如票据/照片URL)"
-            value={proofUrls}
-            onChange={(e) => setProofUrls(e.target.value)}
-          />
+          <ImageUploader urls={proofUrls} onChange={setProofUrls} />
           <button
             className="btn-primary"
-            disabled={busy || !proofUrls}
-            onClick={() =>
-              run(() =>
-                api.post(`/tasks/${id}/submit-completion`, {
-                  proofUrls: proofUrls.split(",").map((s) => s.trim()).filter(Boolean),
-                }),
-              )
-            }
+            disabled={busy || proofUrls.length === 0}
+            onClick={() => run(() => api.post(`/tasks/${id}/submit-completion`, { proofUrls }))}
           >
             提交
           </button>

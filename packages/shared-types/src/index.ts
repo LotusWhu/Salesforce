@@ -8,3 +8,4 @@ export * from "./classified";
 export * from "./chat";
 export * from "./payment";
 export * from "./notification";
+export * from "./upload";

@@ -7,6 +7,7 @@ import { CLASSIFIED_CATEGORY_LABELS } from "@/lib/labels";
 import { useAuth } from "@/lib/auth-context";
 import { Card, ErrorText, Field, PrimaryButton, SecondaryButton, TextField, colors } from "@/components/ui";
 import LocationPicker, { PickedLocation } from "@/components/LocationPicker";
+import ImageUploader from "@/components/ImageUploader";
 import { Text } from "react-native";
 
 export default function NewClassifiedScreen() {
@@ -18,6 +19,7 @@ export default function NewClassifiedScreen() {
   const [price, setPrice] = useState("");
   const [city, setCity] = useState("");
   const [location, setLocation] = useState<PickedLocation | null>(null);
+  const [photos, setPhotos] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,6 +50,7 @@ export default function NewClassifiedScreen() {
         price: price ? Number(price) : undefined,
         city: city || undefined,
         location: location ? { lat: location.lat, lng: location.lng, address: location.address } : undefined,
+        photos,
       });
       router.replace(`/classifieds/${listing.id}`);
     } catch (e) {
@@ -91,6 +94,10 @@ export default function NewClassifiedScreen() {
 
         <Field label="地图位置 (可选)">
           <LocationPicker value={location} onChange={setLocation} />
+        </Field>
+
+        <Field label="图片 (可选)">
+          <ImageUploader urls={photos} onChange={setPhotos} />
         </Field>
 
         <ErrorText>{error}</ErrorText>
